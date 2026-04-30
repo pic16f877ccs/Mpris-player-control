@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+    <schema id="org.gnome.shell.extensions.mpris-player-control" path="/org/gnome/shell/extensions/mpris-player-control/">
+        <key name="playback-icons-layout" type="s">
+            <default>"standard"</default>
+            <summary>Layout style for playback icons</summary>
+            <description>
+                Controls how the playback icons are arranged in the panel indicator.
+            </description>
+        </key>
+        <key name="spacing" type="u">
+            <default>6</default>
+            <summary>Spacing between label and controls</summary>
+            <description>
+                Sets the horizontal distance, in pixels, between the track title and the playback control icons.
+            </description>
+        </key>
+        <key name="set-title-width" type="u">
+            <default>100</default>
+            <summary>Track title width</summary>
+            <description>
+                Specifies the maximum width, in pixels, of the track title label before it is ellipsized.
+            </description>
+        </key>
+        <key name="get-title-width" type="u">
+            <default>0</default>
+        </key>
+        <key name="enable-seek" type="b">
+            <default>true</default>
+            <summary>Enable scroll‑to‑seek</summary>
+            <description>
+                Allows seeking forward or backward in the current track using the mouse scroll wheel over the forward icon.
+            </description>
+        </key>
+        <key name="seek-offset" type="u">
+            <default>5</default>
+            <summary>The number of seconds to seek forward.</summary>
+            <description>
+                Specified number of seconds by the seeks forward in the current track .
+            </description>
+        </key>
+        <key name="list-player-names" type="a{ss}">
+            <default>{"": ""}</default>
+        </key>
+        <key name="auto-select" type="b">
+            <default>true</default>
+        </key>
+        <key name="active-player-name" type="s">
+            <default>""</default>
+        </key>
+    </schema>
+</schemalist>
