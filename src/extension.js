@@ -212,11 +212,16 @@ export default class MprisPlayerControlExtension extends Extension {
         );
 
         const maxLevel = maxVolume / this._volumeMixerControl.get_vol_max_norm();
-        Main.osdWindowManager.showAll(
+        this._showAll(
             gicon, activePlayerName,
             newVolume / this._volumeMixerControl.get_vol_max_norm(),
             maxLevel,
         );
+    }
+
+    _showAll(icon, label, level, maxLevel) {
+        for (let i = 0; i < Main.osdWindowManager._osdWindows.length; i++)
+            Main.osdWindowManager._showOsdWindow(i, icon, label, level, maxLevel);
     }
 
     _selectPlayer(index) {
