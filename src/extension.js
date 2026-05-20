@@ -115,6 +115,7 @@ export default class MprisPlayerControlExtension extends Extension {
             }
         });
 
+        this._indicator?._clickGesture?.set_enabled(false);
         this._indicator.connect('button-press-event', this._onButtonPressed.bind(this));
 
         this._soundSettings = new Gio.Settings({
