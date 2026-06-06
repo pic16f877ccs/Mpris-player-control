@@ -4,11 +4,13 @@ import GLib from 'gi://GLib';
 import Pango from "gi://Pango";
 import Shell from 'gi://Shell';
 import St from 'gi://St';
+import GObject from 'gi://GObject';
 
 import {Extension, gettext as _} from 'resource:///org/gnome/shell/extensions/extension.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
+import * as Osd from 'resource:///org/gnome/shell/ui/osdWindow.js';
 import {getMixerControl as _mixerControl} from 'resource:///org/gnome/shell/ui/status/volume.js';
 
 import {CONTROL_KEYS_LAYOUT, FREEDESKTOP_DBUS_IFACE_PATH, FREEDESKTOP_DBUS_OBJECT_PATH,
@@ -31,6 +33,8 @@ export default class MprisPlayerControlExtension extends Extension {
             this._settings.set_string('playback-icons-layout', this._playbackIconLayout);
         }
 
+        const monitorIndex = global.display.get_current_monitor();
+        this._osdWindow = new TrackOsdWindow(monitorIndex);
         this._mprisPlayerSeekOffset = this._settings.get_uint('seek-offset');
         this._mprisPlayerSeek = this._settings.get_boolean('enable-seek');
         this._DbusProxy = Gio.DBusProxy.makeProxyWrapper(FREEDESKTOP_DBUS_IFACE_XML);
@@ -45,6 +49,8 @@ export default class MprisPlayerControlExtension extends Extension {
         this._mprisPlayer = null;
         this._playerPropertiesHandler = null;
         this._controlVolumeHandler = null;
+        this._trackTitle = null;
+        this._trackLength = null;
 
         this._controlIconsHandlers = {
             'Backward': null,
@@ -225,6 +231,69 @@ export default class MprisPlayerControlExtension extends Extension {
             Main.osdWindowManager._showOsdWindow(i, icon, label, level, maxLevel);
     }
 
+    _showTrackProgressOsd(icon, label, level, maxLevel) {
+        this._osdWindow.setIcon(icon);
+        this._osdWindow.setLabel(label);
+        this._osdWindow.setMaxLevel(maxLevel);
+        this._osdWindow.setLevel(level);
+        this._osdWindow.show();
+    }
+
+    _formatTimeUS(us) {
+        if (!us || us < 0)
+            return "0:00";
+
+        const totalSeconds = Math.floor(us / 1_000_000);
+        const minutes = Math.floor(totalSeconds / 60);
+        const seconds = totalSeconds % 60;
+
+        return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    }
+
+    async _safeTrackPosition() {
+        try {
+            const position = await this._position();
+            return position ?? 0;
+        } catch (e) {
+            log(`position unavailable: ${e}`);
+            return 0;
+        }
+    }
+
+    async _showRewindIndicator(selectIconName) {
+        const iconName = {
+            backward: 'media-skip-backward-symbolic',
+            forward:  'media-skip-forward-symbolic',
+        };
+
+        const icon = new Gio.ThemedIcon({ name: iconName[selectIconName] });
+
+        const currentUS = await this._safeTrackPosition();
+        const totalUS   = this._trackLength ?? 0;
+
+        const current = this._formatTimeUS(currentUS);
+        const total   = this._formatTimeUS(totalUS);
+
+        //const label = `${current} / ${total}`;
+        //const label = `${current}\u2005└────────────────────────┘\u2005${total}`;
+        //const label = `${current}\u2005╭────────────────────────╮\u2005${total}`;
+        //const label = `${current}\u2005┏━━━━━━━━━━━━━━━━━━━━━━━━┓\u2005${total}`;
+        //const label = `${current}\u2005┝━━━━━━━━━━━━━━━━━━━━━━━━━┥\u2005${total}`;
+        //const label = `${current}\u2005╒═════════════════════════╕\u2005${total}`;
+        //const label = `${current}\u2005◔━━━━━━━━━━━━◑━━━━━━━━━━━◕\u2005${total}`;
+        //const label = `${current}\u2005╞═════════════════════════╡\u2005${total}`;
+        //const label = `${current}\u2005○────────────────────────○\u2005${total}`;
+        //const label = `${current}\u2005●━━━━━━━━━━━━━━━━━━━━━━━━●\u2005${total}`;
+        //const label = `${current}\u2005◉━━━━━━━━━━━━━━━━━━━━━━━━◉\u2005${total}`;
+        const label = `${current}\u2005◔━━━━━━━━━━━━━━━━━━━━━━━━◕\u2005${total}`;
+
+        let progress = 0;
+        if (totalUS > 0)
+            progress = currentUS / totalUS;
+
+        this._showTrackProgressOsd(null, label, progress, 1);
+    }
+
     _selectPlayer(index) {
         if (this._mprisPlayer) {
             this._removePlayerProxy(this._mprisPlayer.get_name());
@@ -278,12 +347,10 @@ export default class MprisPlayerControlExtension extends Extension {
 
             menuItem.connect('toggled', (item, state) => {
                 this._settings.set_boolean('auto-select', state);
-                this._activePlayerIndex = 0;
 
                 if (this._mprisPlayer) {
                     return;
                 }
-
                 this._addPlayerProxy(this._activePlayerIndex);
             });
 
@@ -511,6 +578,8 @@ export default class MprisPlayerControlExtension extends Extension {
                 this._trackTitle = _('Unknown title');
             }
 
+            this._trackLength = metadata['mpris:length'];
+
             this._trackLabel.clutter_text.set_width(this._titleWidth);
             this._trackLabel.set_text(this._trackTitle);
 
@@ -605,12 +674,14 @@ export default class MprisPlayerControlExtension extends Extension {
                 }
 
                 this._mprisPlayerNames.splice(index, 1);
+                console.log(`*****< Remove invalidate Player name: ${name} >*****`);
                 delete this._listPlayerNames[name];
 
-                if (this._mprisPlayer?.get_nameOwner() === oldOwner) {
+                if (this._mprisPlayer?.get_name_owner() === oldOwner) {
                     this._removePlayerProxy(null);
                     
                     if (this._settings.get_boolean("auto-select")) {
+                        console.log(`*****< Add other new Player name: ${this._mprisPlayerNames} >*****`);
                         this._addPlayerProxy(this._activePlayerIndex);
                     }
                 }
@@ -661,6 +732,7 @@ export default class MprisPlayerControlExtension extends Extension {
                         this._trackTitle = _('Unknown title');
                     }
 
+                    this._trackLength = metadata['mpris:length'];
                     this._trackLabel.clutter_text.set_width(this._titleWidth);
                     this._trackLabel.set_text(this._trackTitle);
                 }
@@ -740,8 +812,10 @@ export default class MprisPlayerControlExtension extends Extension {
                         const mprisPlayerSeekOffset = this._mprisPlayerSeekOffset * 1_000_000;
                         if (direction === Clutter.ScrollDirection.UP) {
                             await this._mprisPlayer.SeekAsync(mprisPlayerSeekOffset);
+                            this._showRewindIndicator('forward', true);
                         } else if (direction === Clutter.ScrollDirection.DOWN) {
                             await this._mprisPlayer.SeekAsync(-mprisPlayerSeekOffset);
+                            this._showRewindIndicator('backward', false);
                         } else {
                             return Clutter.EVENT_PROPAGATE;
                         }
@@ -992,3 +1066,70 @@ export default class MprisPlayerControlExtension extends Extension {
         this._indicator = null;
     }
 }
+
+const TrackOsdWindow = GObject.registerClass({
+    GTypeName: 'TrackOsdWindow',
+}, class TrackOsdWindow extends Osd.OsdWindow {
+    
+    show() {
+        const originalGIcon = this._icon.gicon;
+        
+        if (!originalGIcon) {
+            this._icon.gicon = new Gio.Emblem();
+        }
+
+        super.show();
+
+        this._icon.hide();
+
+        if (!originalGIcon) {
+            this._icon.gicon = null;
+        }
+    }
+});
+        //if (!this.visible) {
+        //    global.compositor.disable_unredirect();
+        //    super.show();
+        //    this.opacity = 0;
+        //    this.get_parent().set_child_above_sibling(this, null);
+
+        //    this.ease({
+        //        opacity: 255,
+        //        duration: FADE_TIME,
+        //        mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+        //    });
+        //}
+
+        //if (this._hideTimeoutId)
+        //    GLib.source_remove(this._hideTimeoutId);
+        //this._hideTimeoutId = GLib.timeout_add_once(
+        //    GLib.PRIORITY_DEFAULT, HIDE_TIMEOUT, this._hide.bind(this));
+        //GLib.Source.set_name_by_id(this._hideTimeoutId, '[gnome-shell] this._hide');
+
+        // We temporarily trick the native OsdWindow into thinking 
+        // a gicon exists so it passes the guard clause.
+        
+    //async _showRewindIndicator(selectIconName, offset_direction) {
+    //    const iconName = { 
+    //        backward: 'media-skip-backward-symbolic',
+    //        forward: 'media-skip-forward-symbolic',
+    //    };
+
+    //    const icon = new Gio.ThemedIcon({
+    //        name: iconName[selectIconName],
+    //    });
+
+    //    try {
+    //        const position = await this._position();
+    //        const current = this._formatTimeUs(position);
+    //        const total = this._formatTimeUs(this._trackLength);
+    //        const label = `${current} / ${total}`;
+    //        const progress = position / this._trackLength;
+
+    //        //const seek_offset = offset_direction ? '+' + this._mprisPlayerSeekOffset : '-' + this._mprisPlayerSeekOffset; 
+    //        this._showAll(icon, label, progress, 1);
+    //    } catch(e) {
+    //        logError(e, 'could not get track position');
+    //    }
+    //}
+
