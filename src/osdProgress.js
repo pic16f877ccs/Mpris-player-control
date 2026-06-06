@@ -1,3 +1,17 @@
+/*
+ * Adapted from GNOME Shell js/ui/osdWindow.js and related bar level code.
+ * Modifications:
+ * - removed icon handling
+ * - changed progress semantics to use microseconds
+ *
+ * Copyright (C) 2026 Karl Wulfert
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ */
+
 import Atk from 'gi://Atk';
 import Clutter from 'gi://Clutter';
 import GLib from 'gi://GLib';
