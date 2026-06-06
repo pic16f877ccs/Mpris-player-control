@@ -4,14 +4,15 @@ import GLib from 'gi://GLib';
 import Pango from "gi://Pango";
 import Shell from 'gi://Shell';
 import St from 'gi://St';
-import GObject from 'gi://GObject';
+//import GObject from 'gi://GObject';
 
 import {Extension, gettext as _} from 'resource:///org/gnome/shell/extensions/extension.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
-import * as Osd from 'resource:///org/gnome/shell/ui/osdWindow.js';
+//import * as Osd from 'resource:///org/gnome/shell/ui/osdWindow.js';
 import {getMixerControl as _mixerControl} from 'resource:///org/gnome/shell/ui/status/volume.js';
+import {OsdProgressWindow} from './osdProgress.js';
 
 import {CONTROL_KEYS_LAYOUT, FREEDESKTOP_DBUS_IFACE_PATH, FREEDESKTOP_DBUS_OBJECT_PATH,
     FREEDESKTOP_DBUS_IFACE_XML,
@@ -34,7 +35,9 @@ export default class MprisPlayerControlExtension extends Extension {
         }
 
         const monitorIndex = global.display.get_current_monitor();
-        this._osdWindow = new TrackOsdWindow(monitorIndex);
+        //this._osdWindow = new TrackOsdWindow(monitorIndex);
+        this._osdWindow = new OsdProgressWindow(monitorIndex);
+
         this._mprisPlayerSeekOffset = this._settings.get_uint('seek-offset');
         this._mprisPlayerSeek = this._settings.get_boolean('enable-seek');
         this._DbusProxy = Gio.DBusProxy.makeProxyWrapper(FREEDESKTOP_DBUS_IFACE_XML);
@@ -231,11 +234,17 @@ export default class MprisPlayerControlExtension extends Extension {
             Main.osdWindowManager._showOsdWindow(i, icon, label, level, maxLevel);
     }
 
-    _showTrackProgressOsd(icon, label, level, maxLevel) {
-        this._osdWindow.setIcon(icon);
+    //_showTrackProgressOsd(icon, label, level, maxLevel) {
+    //    this._osdWindow.setIcon(icon);
+    //    this._osdWindow.setLabel(label);
+    //    this._osdWindow.setMaxLevel(maxLevel);
+    //    this._osdWindow.setLevel(level);
+    //    this._osdWindow.show();
+    //}
+    _showTrackProgressOsd(label, positionUS, totalUS) {
         this._osdWindow.setLabel(label);
-        this._osdWindow.setMaxLevel(maxLevel);
-        this._osdWindow.setLevel(level);
+        this._osdWindow.setMaxLevel(totalUS > 0 ? totalUS : 1);
+        this._osdWindow.setLevel(positionUS);
         this._osdWindow.show();
     }
 
@@ -285,13 +294,15 @@ export default class MprisPlayerControlExtension extends Extension {
         //const label = `${current}\u2005○────────────────────────○\u2005${total}`;
         //const label = `${current}\u2005●━━━━━━━━━━━━━━━━━━━━━━━━●\u2005${total}`;
         //const label = `${current}\u2005◉━━━━━━━━━━━━━━━━━━━━━━━━◉\u2005${total}`;
-        const label = `${current}\u2005◔━━━━━━━━━━━━━━━━━━━━━━━━◕\u2005${total}`;
+        const label = `${current}\u2005▷━━━━━━━━━━━━━━━━━━━━━━◼\u2005${total}`;
+        //const label = `${current}\u2005◔━━━━━━━━━━━━━━━━━━━━━━━━◕\u2005${total}`;
 
-        let progress = 0;
-        if (totalUS > 0)
-            progress = currentUS / totalUS;
+        //let progress = 0;
+        //if (totalUS > 0)
+        //    progress = currentUS / totalUS;
 
-        this._showTrackProgressOsd(null, label, progress, 1);
+        //this._showTrackProgressOsd(null, label, progress, 1);
+        this._showTrackProgressOsd(label, currentUS, totalUS);
     }
 
     _selectPlayer(index) {
@@ -1067,26 +1078,26 @@ export default class MprisPlayerControlExtension extends Extension {
     }
 }
 
-const TrackOsdWindow = GObject.registerClass({
-    GTypeName: 'TrackOsdWindow',
-}, class TrackOsdWindow extends Osd.OsdWindow {
-    
-    show() {
-        const originalGIcon = this._icon.gicon;
-        
-        if (!originalGIcon) {
-            this._icon.gicon = new Gio.Emblem();
-        }
-
-        super.show();
-
-        this._icon.hide();
-
-        if (!originalGIcon) {
-            this._icon.gicon = null;
-        }
-    }
-});
+//const TrackOsdWindow = GObject.registerClass({
+//    GTypeName: 'TrackOsdWindow',
+//}, class TrackOsdWindow extends Osd.OsdWindow {
+//    
+//    show() {
+//        const originalGIcon = this._icon.gicon;
+//        
+//        if (!originalGIcon) {
+//            this._icon.gicon = new Gio.Emblem();
+//        }
+//
+//        super.show();
+//
+//        this._icon.hide();
+//
+//        if (!originalGIcon) {
+//            this._icon.gicon = null;
+//        }
+//    }
+//});
         //if (!this.visible) {
         //    global.compositor.disable_unredirect();
         //    super.show();
