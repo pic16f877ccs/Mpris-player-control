@@ -252,17 +252,6 @@ export default class MprisPlayerControlExtension extends Extension {
         this._osdWindow.show();
     }
 
-    _formatTimeUS(us) {
-        if (!us || us < 0)
-            return "0:00";
-
-        const totalSeconds = Math.floor(us / 1_000_000);
-        const minutes = Math.floor(totalSeconds / 60);
-        const seconds = totalSeconds % 60;
-
-        return `${minutes}:${seconds.toString().padStart(2, '0')}`;
-    }
-
     async _safeTrackPosition() {
         try {
             const position = await this._position();
@@ -284,28 +273,23 @@ export default class MprisPlayerControlExtension extends Extension {
         const currentUS = await this._safeTrackPosition();
         const totalUS   = this._trackLength ?? 0;
 
-        const current = this._formatTimeUS(currentUS);
-        const total   = this._formatTimeUS(totalUS);
+        const current = formatTimeUS(currentUS);
+        const total   = formatTimeUS(totalUS);
 
-        //const label = `${current} / ${total}`;
         //const label = `${current}\u2005└────────────────────────┘\u2005${total}`;
         //const label = `${current}\u2005╭────────────────────────╮\u2005${total}`;
         //const label = `${current}\u2005┏━━━━━━━━━━━━━━━━━━━━━━━━┓\u2005${total}`;
         //const label = `${current}\u2005┝━━━━━━━━━━━━━━━━━━━━━━━━━┥\u2005${total}`;
         //const label = `${current}\u2005╒═════════════════════════╕\u2005${total}`;
-        //const label = `${current}\u2005◔━━━━━━━━━━━━◑━━━━━━━━━━━◕\u2005${total}`;
         //const label = `${current}\u2005╞═════════════════════════╡\u2005${total}`;
         //const label = `${current}\u2005○────────────────────────○\u2005${total}`;
         //const label = `${current}\u2005●━━━━━━━━━━━━━━━━━━━━━━━━●\u2005${total}`;
         //const label = `${current}\u2005◉━━━━━━━━━━━━━━━━━━━━━━━━◉\u2005${total}`;
-        const label = `${current}\u2005▷━━━━━━━━━━━━━━━━━━━━━━◼\u2005${total}`;
+        //const label = `${current}\u2005▷━━━━━━━━━━━━━━━━━━━━━━◼\u2005${total}`;
         //const label = `${current}\u2005◔━━━━━━━━━━━━━━━━━━━━━━━━◕\u2005${total}`;
-
-        //let progress = 0;
-        //if (totalUS > 0)
-        //    progress = currentUS / totalUS;
-
-        //this._showTrackProgressOsd(null, label, progress, 1);
+        //const label = `${left}\u2005◔━━━━━━━━━━━━━━━━━━━━━━━━◕\u2005${right}`;
+        //
+        const label = buildLabel(current, total);
         this._showTrackProgressOsd(label, currentUS, totalUS);
     }
 
@@ -1082,69 +1066,24 @@ export default class MprisPlayerControlExtension extends Extension {
     }
 }
 
-//const TrackOsdWindow = GObject.registerClass({
-//    GTypeName: 'TrackOsdWindow',
-//}, class TrackOsdWindow extends Osd.OsdWindow {
-//    
-//    show() {
-//        const originalGIcon = this._icon.gicon;
-//        
-//        if (!originalGIcon) {
-//            this._icon.gicon = new Gio.Emblem();
-//        }
-//
-//        super.show();
-//
-//        this._icon.hide();
-//
-//        if (!originalGIcon) {
-//            this._icon.gicon = null;
-//        }
-//    }
-//});
-        //if (!this.visible) {
-        //    global.compositor.disable_unredirect();
-        //    super.show();
-        //    this.opacity = 0;
-        //    this.get_parent().set_child_above_sibling(this, null);
+function formatTimeUS(us) {
+    if (!us || us < 0)
+        return "0:00";
 
-        //    this.ease({
-        //        opacity: 255,
-        //        duration: FADE_TIME,
-        //        mode: Clutter.AnimationMode.EASE_OUT_QUAD,
-        //    });
-        //}
+    const totalSeconds = Math.floor(us / 1_000_000);
+    const seconds = totalSeconds % 60;
+    const minutes = Math.floor(totalSeconds / 60);
+    const hours = Math.floor(minutes / 60);
+    const hours_str = hours > 0 ? hours + ':' : '';
 
-        //if (this._hideTimeoutId)
-        //    GLib.source_remove(this._hideTimeoutId);
-        //this._hideTimeoutId = GLib.timeout_add_once(
-        //    GLib.PRIORITY_DEFAULT, HIDE_TIMEOUT, this._hide.bind(this));
-        //GLib.Source.set_name_by_id(this._hideTimeoutId, '[gnome-shell] this._hide');
+    return `${hours_str}${minutes}:${seconds.toString().padStart(2, '0')}`;
+}
 
-        // We temporarily trick the native OsdWindow into thinking 
-        // a gicon exists so it passes the guard clause.
-        
-    //async _showRewindIndicator(selectIconName, offset_direction) {
-    //    const iconName = { 
-    //        backward: 'media-skip-backward-symbolic',
-    //        forward: 'media-skip-forward-symbolic',
-    //    };
+function buildLabel(current, total) {
+    const TOTAL_WIDTH = 32;
+    const staticParts = current.length + total.length; 
+    const variableLength = Math.max(1, TOTAL_WIDTH - staticParts);
+    const fill = "━".repeat(variableLength);
 
-    //    const icon = new Gio.ThemedIcon({
-    //        name: iconName[selectIconName],
-    //    });
-
-    //    try {
-    //        const position = await this._position();
-    //        const current = this._formatTimeUs(position);
-    //        const total = this._formatTimeUs(this._trackLength);
-    //        const label = `${current} / ${total}`;
-    //        const progress = position / this._trackLength;
-
-    //        //const seek_offset = offset_direction ? '+' + this._mprisPlayerSeekOffset : '-' + this._mprisPlayerSeekOffset; 
-    //        this._showAll(icon, label, progress, 1);
-    //    } catch(e) {
-    //        logError(e, 'could not get track position');
-    //    }
-    //}
-
+    return `${current}\u2005◔${fill}◕\u2005${total}`;
+}
