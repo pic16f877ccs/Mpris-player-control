@@ -242,9 +242,13 @@ export default class MprisPlayerControlExtension extends Extension {
     //    this._osdWindow.show();
     //}
     _showTrackProgressOsd(label, positionUS, totalUS) {
+        let progress = 0;
+        if (totalUS > 0)
+            progress = Math.clamp(positionUS / totalUS, 0, 1);
+
         this._osdWindow.setLabel(label);
-        this._osdWindow.setMaxLevel(totalUS > 0 ? totalUS : 1);
-        this._osdWindow.setLevel(positionUS);
+        this._osdWindow.setMaxLevel(1);
+        this._osdWindow.setLevel(progress);
         this._osdWindow.show();
     }
 
