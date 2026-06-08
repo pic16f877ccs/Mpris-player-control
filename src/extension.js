@@ -4,13 +4,11 @@ import GLib from 'gi://GLib';
 import Pango from "gi://Pango";
 import Shell from 'gi://Shell';
 import St from 'gi://St';
-//import GObject from 'gi://GObject';
 
 import {Extension, gettext as _} from 'resource:///org/gnome/shell/extensions/extension.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
-//import * as Osd from 'resource:///org/gnome/shell/ui/osdWindow.js';
 import {getMixerControl as _mixerControl} from 'resource:///org/gnome/shell/ui/status/volume.js';
 import {OsdProgressWindow} from './osdProgress.js';
 
@@ -35,7 +33,6 @@ export default class MprisPlayerControlExtension extends Extension {
         }
 
         const monitorIndex = global.display.get_current_monitor();
-        //this._osdWindow = new TrackOsdWindow(monitorIndex);
         this._osdWindow = new OsdProgressWindow(monitorIndex);
 
         this._mprisPlayerSeekOffset = this._settings.get_uint('seek-offset');
@@ -52,7 +49,7 @@ export default class MprisPlayerControlExtension extends Extension {
         this._mprisPlayer = null;
         this._playerPropertiesHandler = null;
         this._controlVolumeHandler = null;
-        this._trackTitle = null;
+        this._trackTitle = _('Unknown title');
         this._trackLength = null;
 
         this._controlIconsHandlers = {
@@ -234,17 +231,10 @@ export default class MprisPlayerControlExtension extends Extension {
             Main.osdWindowManager._showOsdWindow(i, icon, label, level, maxLevel);
     }
 
-    //_showTrackProgressOsd(icon, label, level, maxLevel) {
-    //    this._osdWindow.setIcon(icon);
-    //    this._osdWindow.setLabel(label);
-    //    this._osdWindow.setMaxLevel(maxLevel);
-    //    this._osdWindow.setLevel(level);
-    //    this._osdWindow.show();
-    //}
     _showTrackProgressOsd(label, positionUS, totalUS) {
-        let progress = 0;
-        if (totalUS > 0)
-            progress = Math.clamp(positionUS / totalUS, 0, 1);
+        const progress = totalUS > 0
+            ? Math.clamp(positionUS / totalUS, 0, 1)
+            : 0;
 
         this._osdWindow.setLabel(label);
         this._osdWindow.setMaxLevel(1);
@@ -254,8 +244,7 @@ export default class MprisPlayerControlExtension extends Extension {
 
     async _safeTrackPosition() {
         try {
-            const position = await this._position();
-            return position ?? 0;
+            return await this._position() ?? 0;
         } catch (e) {
             log(`position unavailable: ${e}`);
             return 0;
@@ -276,19 +265,6 @@ export default class MprisPlayerControlExtension extends Extension {
         const current = formatTimeUS(currentUS);
         const total   = formatTimeUS(totalUS);
 
-        //const label = `${current}\u2005└────────────────────────┘\u2005${total}`;
-        //const label = `${current}\u2005╭────────────────────────╮\u2005${total}`;
-        //const label = `${current}\u2005┏━━━━━━━━━━━━━━━━━━━━━━━━┓\u2005${total}`;
-        //const label = `${current}\u2005┝━━━━━━━━━━━━━━━━━━━━━━━━━┥\u2005${total}`;
-        //const label = `${current}\u2005╒═════════════════════════╕\u2005${total}`;
-        //const label = `${current}\u2005╞═════════════════════════╡\u2005${total}`;
-        //const label = `${current}\u2005○────────────────────────○\u2005${total}`;
-        //const label = `${current}\u2005●━━━━━━━━━━━━━━━━━━━━━━━━●\u2005${total}`;
-        //const label = `${current}\u2005◉━━━━━━━━━━━━━━━━━━━━━━━━◉\u2005${total}`;
-        //const label = `${current}\u2005▷━━━━━━━━━━━━━━━━━━━━━━◼\u2005${total}`;
-        //const label = `${current}\u2005◔━━━━━━━━━━━━━━━━━━━━━━━━◕\u2005${total}`;
-        //const label = `${left}\u2005◔━━━━━━━━━━━━━━━━━━━━━━━━◕\u2005${right}`;
-        //
         const label = buildLabel(current, total);
         this._showTrackProgressOsd(label, currentUS, totalUS);
     }
@@ -583,6 +559,7 @@ export default class MprisPlayerControlExtension extends Extension {
             this._trackLabel.set_text(this._trackTitle);
 
             this._statusIconManager(this._mprisPlayer.PlaybackStatus);
+
         } catch (e) {
             logError(e, `could not add proxy player ${this._mprisPlayerNames}`);
         }
@@ -1067,23 +1044,81 @@ export default class MprisPlayerControlExtension extends Extension {
 }
 
 function formatTimeUS(us) {
-    if (!us || us < 0)
-        return "0:00";
+    const s = us > 0 ? Math.floor(us / 1_000_000) : 0;
 
-    const totalSeconds = Math.floor(us / 1_000_000);
-    const seconds = totalSeconds % 60;
-    const minutes = Math.floor(totalSeconds / 60);
-    const hours = Math.floor(minutes / 60);
-    const hours_str = hours > 0 ? hours + ':' : '';
+    const h = Math.floor(s / 3600);
+    const m = Math.floor(s / 60) % 60;
+    const sec = s % 60;
 
-    return `${hours_str}${minutes}:${seconds.toString().padStart(2, '0')}`;
+    return h
+        ? `${h}:${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`
+        : `${m}:${String(sec).padStart(2, '0')}`;
 }
 
 function buildLabel(current, total) {
     const TOTAL_WIDTH = 32;
-    const staticParts = current.length + total.length; 
-    const variableLength = Math.max(1, TOTAL_WIDTH - staticParts);
-    const fill = "━".repeat(variableLength);
 
-    return `${current}\u2005◔${fill}◕\u2005${total}`;
+    const prefix = `${current}\u2005◔`;
+    const suffix = `◕\u2005${total}`;
+
+    const fillLength = Math.max(
+        1,
+        TOTAL_WIDTH - prefix.length - suffix.length
+    );
+
+    return `${prefix}${'━'.repeat(fillLength)}${suffix}`;
 }
+
+//function formatTimeUS(us) {
+//    if (us <= 0)
+//        return '0:00';
+//
+//    const totalSeconds = Math.floor(us / 1_000_000);
+//
+//    const hours = Math.floor(totalSeconds / 3600);
+//    const minutes = Math.floor(totalSeconds / 60) % 60;
+//    const seconds = totalSeconds % 60;
+//
+//    return hours > 0
+//        ? `${hours}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
+//        : `${minutes}:${String(seconds).padStart(2, '0')}`;
+//}
+
+//function formatTimeUS(us) {
+//    if (!us || us < 0)
+//        return "0:00";
+//
+//    const totalSeconds = Math.floor(us / 1_000_000);
+//    const seconds = totalSeconds % 60;
+//    const totalMinutes = Math.floor(totalSeconds / 60);
+//    const minutes = totalMinutes % 60;
+//    const hours = Math.floor(totalMinutes / 60);
+//    const hours_str = hours > 0 ? hours + ':' : '';
+//
+//    return `${hours_str}${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+//}
+
+//function buildLabel(current, total) {
+//    const TOTAL_WIDTH = 32;
+//    const staticParts = current.length + total.length; 
+//    const variableLength = Math.max(1, TOTAL_WIDTH - staticParts);
+//    const fill = "━".repeat(variableLength);
+//
+//    return `${current}\u2005◔${fill}◕\u2005${total}`;
+//}
+    //const fixed = `${current}\u2005◔◕\u2005${total}`;
+    //const fillLength = TOTAL_WIDTH - fixed.length;
+    //return `${current}\u2005◔${'━'.repeat(fillLength)}◕\u2005${total}`;
+        //const label = `${current}\u2005└────────────────────────┘\u2005${total}`;
+        //const label = `${current}\u2005╭────────────────────────╮\u2005${total}`;
+        //const label = `${current}\u2005┏━━━━━━━━━━━━━━━━━━━━━━━━┓\u2005${total}`;
+        //const label = `${current}\u2005┝━━━━━━━━━━━━━━━━━━━━━━━━━┥\u2005${total}`;
+        //const label = `${current}\u2005╒═════════════════════════╕\u2005${total}`;
+        //const label = `${current}\u2005╞═════════════════════════╡\u2005${total}`;
+        //const label = `${current}\u2005○────────────────────────○\u2005${total}`;
+        //const label = `${current}\u2005●━━━━━━━━━━━━━━━━━━━━━━━━●\u2005${total}`;
+        //const label = `${current}\u2005◉━━━━━━━━━━━━━━━━━━━━━━━━◉\u2005${total}`;
+        //const label = `${current}\u2005▷━━━━━━━━━━━━━━━━━━━━━━◼\u2005${total}`;
+        //const label = `${current}\u2005◔━━━━━━━━━━━━━━━━━━━━━━━━◕\u2005${total}`;
+        //const label = `${left}\u2005◔━━━━━━━━━━━━━━━━━━━━━━━━◕\u2005${right}`;
+        //
