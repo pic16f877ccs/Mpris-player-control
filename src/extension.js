@@ -542,8 +542,7 @@ export default class MprisPlayerControlExtension extends Extension {
             this._connectPlayerProperties();
             this._connectVolumeControl();
 
-            this._playerApp();
-            this._insertPlayerIcon()
+              this._updatePlayerIcon();
 
             const metadata = {};
             for (const property in this._mprisPlayer.Metadata) {
@@ -673,17 +672,13 @@ export default class MprisPlayerControlExtension extends Extension {
         }
     }
 
-    _playerApp() {
-        if (this._mprisProxy.DesktopEntry) {
-            const desktop_id = `${this._mprisProxy.DesktopEntry}.desktop`;
-            this._app = Shell.AppSystem.get_default().lookup_app(desktop_id);
-        } else {
-            this._app = null;
-        }
-    }
+    _updatePlayerIcon() {
+        const desktopEntry = this._mprisProxy?.DesktopEntry;
+        const app = desktopEntry
+            ? Shell.AppSystem.get_default().lookup_app(`${desktopEntry}.desktop`)
+            : null;
 
-    _insertPlayerIcon() {
-        this._playerIcon.set_gicon(this._app?.get_icon() ?? null);
+        this._playerIcon.set_gicon(app?.get_icon() ?? null);
         this._playerIcon.remove_style_pseudo_class('insensitive');
     }
 
