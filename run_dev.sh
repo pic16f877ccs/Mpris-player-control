@@ -46,21 +46,11 @@ nested() {
 
     echo '...'
 
-    export XDG_CONFIG_HOME=$HOME/nested-config
+    #export XDG_CONFIG_HOME=$HOME/nested-config
 
     if [ "$(gnome-shell --version | awk '{print int($3)}')" -ge 49 ]; then
         
-        # dbus-run-session gnome-shell --devkit --wayland
-        dbus-run-session -- bash -lc '
-  echo "Monitoring MonitorsChanged..."
-  dbus-monitor --session \
-    "type='\''signal'\'',sender='\''org.gnome.Mutter.DisplayConfig'\'',interface='\''org.gnome.Mutter.DisplayConfig'\'',member='\''MonitorsChanged'\''" &
-  MON_PID=$!
-
-  gnome-shell --devkit --wayland
-
-  kill $MON_PID 2>/dev/null || true
-'
+        dbus-run-session gnome-shell --devkit --wayland
     else
         if [ "$first_arg" = '--fullhd' ]; then
             echo 'Full Hd screen size...'

@@ -49,8 +49,7 @@ export default class MprisPlayerControlExtension extends Extension {
         this._mprisPlayer = null;
         this._playerPropertiesHandler = null;
         this._controlVolumeHandler = null;
-        this._trackTitle = _('Unknown title');
-        this._trackLength = null;
+        this._trackLength = 0;
 
         this._controlIconsHandlers = {
             'Backward': null,
@@ -242,30 +241,16 @@ export default class MprisPlayerControlExtension extends Extension {
         this._osdWindow.show();
     }
 
-    async _safeTrackPosition() {
-        try {
-            return await this._position() ?? 0;
-        } catch (e) {
-            log(`position unavailable: ${e}`);
-            return 0;
-        }
-    }
+    async _showRewindIndicator() {
+        const currentUS = await this._position();
+        const totalUS = this._trackLength;
 
-    async _showRewindIndicator(selectIconName) {
-        const iconName = {
-            backward: 'media-skip-backward-symbolic',
-            forward:  'media-skip-forward-symbolic',
-        };
-
-        const icon = new Gio.ThemedIcon({ name: iconName[selectIconName] });
-
-        const currentUS = await this._safeTrackPosition();
-        const totalUS   = this._trackLength ?? 0;
-
-        const current = formatTimeUS(currentUS);
-        const total   = formatTimeUS(totalUS);
-
-        const label = buildLabel(current, total);
+        const label = buildLabel(
+            //formatTimeUS(currentUS),
+            totalUS > 0 ? formatTimeUS(currentUS) : '--:--',
+            totalUS > 0 ? formatTimeUS(totalUS) : '--:--'
+        );
+        
         this._showTrackProgressOsd(label, currentUS, totalUS);
     }
 
@@ -463,22 +448,25 @@ export default class MprisPlayerControlExtension extends Extension {
         }
     }
 
+    // Returns position in microseconds.
+    // Returns 0 if unavailable.
     async _position() {
         try {
-            if (!this._dbusProxyProperties) {
-                return null;
-            }
+            if (!this._dbusProxyProperties)
+                return 0;
 
             const [value] = await this._dbusProxyProperties.GetAsync(
-                "org.mpris.MediaPlayer2.Player",
-                "Position"
+                'org.mpris.MediaPlayer2.Player',
+                'Position'
             );
 
-            return value?.deepUnpack?.() ?? null;
+            const position = value?.deepUnpack?.();
+            return Number.isFinite(position) && position >= 0
+                ? position
+                : 0;
         } catch (e) {
             logError(e, 'could not get player position');
-
-            return null;
+            return 0;
         }
     }
 
@@ -512,6 +500,20 @@ export default class MprisPlayerControlExtension extends Extension {
 
             return [];
         }
+    }
+
+    _updateTrackInfo(metadata) {
+        this._trackTitle = typeof metadata['xesam:title'] === 'string'
+            ? metadata['xesam:title']
+            : _('Unknown title');
+
+        const length = metadata['mpris:length'];
+        this._trackLength = Number.isFinite(length) && length >= 0
+            ? length
+            : 0;
+
+        this._trackLabel.clutter_text.set_width(this._titleWidth);
+        this._trackLabel.set_text(this._trackTitle);
     }
 
     async _addPlayerProxy(mprisPlayerIndex) {
@@ -548,16 +550,7 @@ export default class MprisPlayerControlExtension extends Extension {
                  metadata[property] = this._mprisPlayer.Metadata[property].deepUnpack();
             }
  
-            this._trackTitle = metadata['xesam:title'];
-            if (typeof this._trackTitle !== 'string') {
-                this._trackTitle = _('Unknown title');
-            }
-
-            this._trackLength = metadata['mpris:length'];
-
-            this._trackLabel.clutter_text.set_width(this._titleWidth);
-            this._trackLabel.set_text(this._trackTitle);
-
+            this._updateTrackInfo(metadata);
             this._statusIconManager(this._mprisPlayer.PlaybackStatus);
 
         } catch (e) {
@@ -702,18 +695,12 @@ export default class MprisPlayerControlExtension extends Extension {
             (_proxy, changed, _invalidated) => {
                 const unpacked = changed.recursiveUnpack();
                 const metadata = unpacked.Metadata ?? null;
-                if(metadata) {
-                    this._trackTitle = metadata['xesam:title'];
-                    if (typeof this._trackTitle !== 'string') {
-                        this._trackTitle = _('Unknown title');
-                    }
+                const status = unpacked.PlaybackStatus ?? null;
 
-                    this._trackLength = metadata['mpris:length'];
-                    this._trackLabel.clutter_text.set_width(this._titleWidth);
-                    this._trackLabel.set_text(this._trackTitle);
+                if(metadata) {
+                    this._updateTrackInfo(metadata);
                 }
 
-                const status = unpacked.PlaybackStatus ?? null;
                 if (status) {
                     this._statusIconManager(status);
                 }
@@ -788,10 +775,10 @@ export default class MprisPlayerControlExtension extends Extension {
                         const mprisPlayerSeekOffset = this._mprisPlayerSeekOffset * 1_000_000;
                         if (direction === Clutter.ScrollDirection.UP) {
                             await this._mprisPlayer.SeekAsync(mprisPlayerSeekOffset);
-                            this._showRewindIndicator('forward', true);
+                            this._showRewindIndicator();
                         } else if (direction === Clutter.ScrollDirection.DOWN) {
                             await this._mprisPlayer.SeekAsync(-mprisPlayerSeekOffset);
-                            this._showRewindIndicator('backward', false);
+                            this._showRewindIndicator();
                         } else {
                             return Clutter.EVENT_PROPAGATE;
                         }
@@ -1044,15 +1031,15 @@ export default class MprisPlayerControlExtension extends Extension {
 }
 
 function formatTimeUS(us) {
-    const s = us > 0 ? Math.floor(us / 1_000_000) : 0;
+    const sec = us > 0 ? Math.floor(us / 1_000_000) : 0;
 
-    const h = Math.floor(s / 3600);
-    const m = Math.floor(s / 60) % 60;
-    const sec = s % 60;
+    const hours = Math.floor(sec / 3600);
+    const minutes = Math.floor(sec / 60) % 60;
+    const seconds = sec % 60;
 
-    return h
-        ? `${h}:${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`
-        : `${m}:${String(sec).padStart(2, '0')}`;
+    return hours
+        ? `${hours}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
+        : `${minutes}:${String(seconds).padStart(2, '0')}`;
 }
 
 function buildLabel(current, total) {
@@ -1068,57 +1055,3 @@ function buildLabel(current, total) {
 
     return `${prefix}${'━'.repeat(fillLength)}${suffix}`;
 }
-
-//function formatTimeUS(us) {
-//    if (us <= 0)
-//        return '0:00';
-//
-//    const totalSeconds = Math.floor(us / 1_000_000);
-//
-//    const hours = Math.floor(totalSeconds / 3600);
-//    const minutes = Math.floor(totalSeconds / 60) % 60;
-//    const seconds = totalSeconds % 60;
-//
-//    return hours > 0
-//        ? `${hours}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
-//        : `${minutes}:${String(seconds).padStart(2, '0')}`;
-//}
-
-//function formatTimeUS(us) {
-//    if (!us || us < 0)
-//        return "0:00";
-//
-//    const totalSeconds = Math.floor(us / 1_000_000);
-//    const seconds = totalSeconds % 60;
-//    const totalMinutes = Math.floor(totalSeconds / 60);
-//    const minutes = totalMinutes % 60;
-//    const hours = Math.floor(totalMinutes / 60);
-//    const hours_str = hours > 0 ? hours + ':' : '';
-//
-//    return `${hours_str}${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-//}
-
-//function buildLabel(current, total) {
-//    const TOTAL_WIDTH = 32;
-//    const staticParts = current.length + total.length; 
-//    const variableLength = Math.max(1, TOTAL_WIDTH - staticParts);
-//    const fill = "━".repeat(variableLength);
-//
-//    return `${current}\u2005◔${fill}◕\u2005${total}`;
-//}
-    //const fixed = `${current}\u2005◔◕\u2005${total}`;
-    //const fillLength = TOTAL_WIDTH - fixed.length;
-    //return `${current}\u2005◔${'━'.repeat(fillLength)}◕\u2005${total}`;
-        //const label = `${current}\u2005└────────────────────────┘\u2005${total}`;
-        //const label = `${current}\u2005╭────────────────────────╮\u2005${total}`;
-        //const label = `${current}\u2005┏━━━━━━━━━━━━━━━━━━━━━━━━┓\u2005${total}`;
-        //const label = `${current}\u2005┝━━━━━━━━━━━━━━━━━━━━━━━━━┥\u2005${total}`;
-        //const label = `${current}\u2005╒═════════════════════════╕\u2005${total}`;
-        //const label = `${current}\u2005╞═════════════════════════╡\u2005${total}`;
-        //const label = `${current}\u2005○────────────────────────○\u2005${total}`;
-        //const label = `${current}\u2005●━━━━━━━━━━━━━━━━━━━━━━━━●\u2005${total}`;
-        //const label = `${current}\u2005◉━━━━━━━━━━━━━━━━━━━━━━━━◉\u2005${total}`;
-        //const label = `${current}\u2005▷━━━━━━━━━━━━━━━━━━━━━━◼\u2005${total}`;
-        //const label = `${current}\u2005◔━━━━━━━━━━━━━━━━━━━━━━━━◕\u2005${total}`;
-        //const label = `${left}\u2005◔━━━━━━━━━━━━━━━━━━━━━━━━◕\u2005${right}`;
-        //
