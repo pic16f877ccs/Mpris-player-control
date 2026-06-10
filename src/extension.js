@@ -49,6 +49,7 @@ export default class MprisPlayerControlExtension extends Extension {
         this._mprisPlayer = null;
         this._playerPropertiesHandler = null;
         this._controlVolumeHandler = null;
+        this._controlControlBoxHandler = null;
         this._trackLength = 0;
 
         this._controlIconsHandlers = {
@@ -57,7 +58,6 @@ export default class MprisPlayerControlExtension extends Extension {
             'Playing': null,
             'Stopped': null,
             'Forward': null,
-            'Scroll': null
         };
 
         this._audioVolumeIcons = [
@@ -389,7 +389,6 @@ export default class MprisPlayerControlExtension extends Extension {
             'Paused': this._pauseIcon,
             'Playing': this._playIcon,
             'Forward': this._forwardIcon,
-            'Scroll': this._forwardIcon
         };
 
         this._addPlaybackIcons(this._playbackIconLayout);
@@ -542,7 +541,7 @@ export default class MprisPlayerControlExtension extends Extension {
 
             this._connectPlayerProperties();
             this._connectVolumeControl();
-            this._connectSeekForwardIcon();
+            this._connectSeekControlBox();
 
               this._updatePlayerIcon();
 
@@ -757,17 +756,17 @@ export default class MprisPlayerControlExtension extends Extension {
     _enablePlaybackIcons(layout) {
         this._connectPlaybackIcons(layout);
         if (this._mprisPlayerSeek) {
-            this._connectSeekForwardIcon(layout);
+            this._connectSeekControlBox(layout);
         }
         this._activatePlaybackIcons(layout);
     }
 
-    _connectSeekForwardIcon() {
-        if (this._controlIconsHandlers['Scroll'] !== null) {
+    _connectSeekControlBox() {
+        if (this._controlControlBoxHandler !== null) {
             return;
         }
 
-        this._controlIconsHandlers['Scroll'] = this._controlBox.connect('scroll-event', async (_actor, event) => {
+        this._controlControlBoxHandler = this._controlBox.connect('scroll-event', async (_actor, event) => {
             if (!this._mprisPlayerSeek) {
                 return Clutter.EVENT_PROPAGATE;
             }
@@ -794,13 +793,13 @@ export default class MprisPlayerControlExtension extends Extension {
         });
     }
 
-    _disconnectSeekForwardIcon() {
-        if (this._controlIconsHandlers['Scroll'] === null) {
+    _disconnectSeekControlBox() {
+        if (this._controlControlBoxHandler === null) {
             return;
         }
 
-        this._controlBox.disconnect(this._controlIconsHandlers['Scroll']);
-        this._controlIconsHandlers['Scroll'] = null;
+        this._controlBox.disconnect(this._controlControlBoxHandler);
+        this._controlControlBoxHandler = null;
     }
 
     _connectPlaybackIcons(layout) {
@@ -916,7 +915,7 @@ export default class MprisPlayerControlExtension extends Extension {
         this._removePlayerAppIcon();
         this._disconnectPlayerProperties();
         this._disconnectVolumeControl();
-        this._disconnectSeekForwardIcon();
+        this._disconnectSeekControlBox();
         this._dbusProxyProperties = null;
         this._trackLabel.clutter_text.set_width(1);
         this._trackLabel.set_text(null);
@@ -973,10 +972,6 @@ export default class MprisPlayerControlExtension extends Extension {
 
     _disconnectPlaybackIcons(layout) {
         layout.forEach((key) => {
-            if (key === 'Scroll') {
-                return;
-            }
-
             if (this._controlIconsHandlers[key] !== null) { 
                 this._controlIcons[key].disconnect(this._controlIconsHandlers[key]);
                 this._controlIconsHandlers[key] = null;
@@ -1007,7 +1002,7 @@ export default class MprisPlayerControlExtension extends Extension {
         }
 
         this._disconnectPlaybackIcons(Object.keys(this._controlIconsHandlers));
-        this._disconnectSeekForwardIcon();
+        this._disconnectSeekControlBox();
         this._disconnectPlayerProperties();
 
         this._mprisPlayerNames = null;
