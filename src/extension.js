@@ -23,9 +23,16 @@ const ALLOW_AMPLIFIED_VOLUME_KEY = 'allow-volume-above-100-percent';
 export default class MprisPlayerControlExtension extends Extension {
     enable() {
         this._indicator = new PanelMenu.Button(0.5, this.metadata.name, false);
+        this._indicator?._clickGesture?.set_enabled(false);
+
         this._settings = this.getSettings();
         this._playbackIconLayout = this._settings.get_string('playback-icons-layout');
         this._titleWidth = this._settings.get_uint('set-title-width');
+
+        this._soundSettings = new Gio.Settings({
+            schema_id: 'org.gnome.desktop.sound',
+        });
+        this._allowAmplified = this._soundSettings.get_boolean(ALLOW_AMPLIFIED_VOLUME_KEY);
 
         if (!Object.keys(CONTROL_KEYS_LAYOUT).includes(this._playbackIconLayout)) {
             this._playbackIconLayout = 'standard';
@@ -51,6 +58,8 @@ export default class MprisPlayerControlExtension extends Extension {
         this._controlVolumeHandler = null;
         this._controlControlBoxHandler = null;
         this._trackLength = 0;
+        this._soundSettingsHandler = null;
+
 
         this._controlIconsHandlers = {
             'Backward': null,
@@ -68,15 +77,15 @@ export default class MprisPlayerControlExtension extends Extension {
             'audio-volume-overamplified-symbolic',
         ];
 
+        this._initPlayerControlBox();
+        this._initMprisPlayer();
+
         this._volumeMixerControl = _mixerControl();
         this._volumeMixerControlHandler = this._volumeMixerControl.connect(
                 'stream-added',
                 (mixerControl, object) => {
             }
         );
-
-        this._initPlayerControlBox();
-        this._initMprisPlayer();
 
         this._playbackIconHandler = this._settings.connect(
             'changed::playback-icons-layout',
@@ -108,15 +117,7 @@ export default class MprisPlayerControlExtension extends Extension {
             this._mprisPlayerSeek = settings.get_boolean(key);
         });
 
-        this._indicator?._clickGesture?.set_enabled(false);
         this._indicator.connect('button-press-event', this._onButtonPressed.bind(this));
-
-        this._soundSettings = new Gio.Settings({
-            schema_id: 'org.gnome.desktop.sound',
-        });
-        this._soundSettingsHandler = null;
-
-        this._allowAmplified = this._soundSettings.get_boolean(ALLOW_AMPLIFIED_VOLUME_KEY);
 
         this._soundSettingsHandler = this._soundSettings.connect(`changed::${ALLOW_AMPLIFIED_VOLUME_KEY}`,
             () => {
