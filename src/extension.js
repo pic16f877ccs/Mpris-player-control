@@ -126,20 +126,15 @@ export default class MprisPlayerControlExtension extends Extension {
         this._soundSettings = new Gio.Settings({
             schema_id: 'org.gnome.desktop.sound',
         });
+        this._soundSettingsHandler = null;
 
         this._allowAmplified = this._soundSettings.get_boolean(ALLOW_AMPLIFIED_VOLUME_KEY);
 
-        this._soundSettings.connect(`changed::${ALLOW_AMPLIFIED_VOLUME_KEY}`,
+        this._soundSettingsHandler = this._soundSettings.connect(`changed::${ALLOW_AMPLIFIED_VOLUME_KEY}`,
             () => {
                 this._allowAmplified = this._soundSettings.get_boolean(ALLOW_AMPLIFIED_VOLUME_KEY);
             }
         );
-    }
-
-    _amplifySettingsChanged() {
-
-        const maxLevel = this._allowAmplified
-            ? this.getMaxLevel() : 1;
     }
 
     _connectVolumeControl() {
@@ -164,7 +159,7 @@ export default class MprisPlayerControlExtension extends Extension {
     _disconnectVolumeControl() {
         this._trackLabel.reactive = false;
 
-        if (!this._controlVolumeHandler === null) {
+        if (this._controlVolumeHandler !== null) {
             this._trackLabel.disconnect(this._controlVolumeHandler);
             this._controlVolumeHandler = null;
         }
@@ -1036,6 +1031,12 @@ export default class MprisPlayerControlExtension extends Extension {
             this._playerSeekScrollHandler = null;
         }
         this._settings = null;
+
+        if (this._soundSettingsHandler !== null) {
+            this._soundSettings.disconnect(this._soundSettingsHandler);
+            this._soundSettingsHandler = null;
+        }
+        this._soundSettings = null;
 
         this._indicator?.destroy();
         this._indicator = null;
