@@ -45,6 +45,7 @@ export default class MprisPlayerControlExtension extends Extension {
         this._mprisPlayerSeekOffset = this._settings.get_uint('seek-offset');
         this._mprisPlayerSeek = this._settings.get_boolean('enable-seek');
         this._progressIndicatorWidth = this._settings.get_uint('progress-indicator-width');
+        this._showProgressIndicator = this._settings.get_boolean('show-progress-indicator');
         this._DbusProxy = Gio.DBusProxy.makeProxyWrapper(FREEDESKTOP_DBUS_IFACE_XML);
         this._DbusProxyProperties = Gio.DBusProxy.makeProxyWrapper(FREEDESKTOP_DBUS_PROPERTIES_IFACE_XML);
         this._MprisProxy = Gio.DBusProxy.makeProxyWrapper(MPRIS_IFACE_XML);
@@ -61,6 +62,7 @@ export default class MprisPlayerControlExtension extends Extension {
         this._trackLength = 0;
         this._soundSettingsHandler = null;
         this._progressIndicatorWidthHandler = null;
+        this._showProgressIndicatorHandler = null;
 
 
         this._controlIconsHandlers = {
@@ -121,6 +123,10 @@ export default class MprisPlayerControlExtension extends Extension {
 
         this._progressIndicatorWidthHandler = this._settings.connect('changed::progress-indicator-width', (settings, key) => {
             this._progressIndicatorWidth = settings.get_uint(key);
+        });
+
+        this._showProgressIndicatorHandler = this._settings.connect('changed::show-progress-indicator', (settings, key) => {
+            this._showProgressIndicator = settings.get_boolean(key);
         });
 
         this._indicator.connect('button-press-event', this._onButtonPressed.bind(this));
@@ -232,6 +238,10 @@ export default class MprisPlayerControlExtension extends Extension {
     }
 
     async _showRewindIndicator() {
+        if (!this._showProgressIndicator) {
+            return;
+        }
+
         const currentUS = await this._position();
         const totalUS = this._trackLength;
 
@@ -1023,6 +1033,10 @@ export default class MprisPlayerControlExtension extends Extension {
         if (this._progressIndicatorWidthHandler !== null) {
             this._settings.disconnect(this._progressIndicatorWidthHandler);
             this._progressIndicatorWidthHandler = null;
+        }
+        if (this._showProgressIndicatorHandler !== null) {
+            this._settings.disconnect(this._showProgressIndicatorHandler);
+            this._showProgressIndicatorHandler = null;
         }
         this._settings = null;
 

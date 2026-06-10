@@ -102,8 +102,18 @@ export default class MprisPlayerControlPreferences extends ExtensionPreferences 
             Gio.SettingsBindFlags.DEFAULT,
         );
 
+        const showProgressIndicatorSwitchRow = new Adw.SwitchRow({
+            title: _('Show progress indicator'),
+            subtitle: _('Show an OSD progress indicator while seeking by scroll.'),
+        });
+
+        window._settings.bind('show-progress-indicator', showProgressIndicatorSwitchRow, 'active',
+            Gio.SettingsBindFlags.DEFAULT,
+        );
+
         controlsGroup.add(seekOffsetSpinRow);
         controlsGroup.add(progressIndicatorWidthSpinRow);
+        controlsGroup.add(showProgressIndicatorSwitchRow);
         controlsGroup.add(keysLayoutComboRow);
         controlsGroup.add(seekScrollSwitchRow);
     }

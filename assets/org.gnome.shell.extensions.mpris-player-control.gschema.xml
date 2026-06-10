@@ -46,6 +46,13 @@
                 Sets the width of the seek progress label in characters.
             </description>
         </key>
+        <key name="show-progress-indicator" type="b">
+            <default>true</default>
+            <summary>Show progress indicator</summary>
+            <description>
+                Shows the seek progress OSD indicator when scrolling to seek.
+            </description>
+        </key>
         <key name="list-player-names" type="a{ss}">
             <default>{"": ""}</default>
         </key>
