@@ -485,20 +485,6 @@ export default class MprisPlayerControlExtension extends Extension {
         }
     }
 
-    //_updateTrackInfo(metadata) {
-    //    this._trackTitle = typeof metadata['xesam:title'] === 'string'
-    //        ? metadata['xesam:title']
-    //        : _('Unknown title');
-
-    //    const length = metadata['mpris:length'];
-    //    this._trackLength = Number.isFinite(length) && length >= 0
-    //        ? length
-    //        : 0;
-
-    //    this._trackLabel.clutter_text.set_width(this._titleWidth);
-    //    this._trackLabel.set_text(this._trackTitle);
-    //}
-
     _updateTrackInfo(metadata) {
         const trackTitle = typeof metadata['xesam:title'] === 'string'
             ? metadata['xesam:title']
