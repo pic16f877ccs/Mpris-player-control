@@ -73,7 +73,7 @@ export default class MprisPlayerControlPreferences extends ExtensionPreferences 
 
         const seekScrollSwitchRow = new Adw.SwitchRow({
             title: _('Enable seek scroll'),
-            subtitle: _('Scroll on playback controls to seek through the current track.'),
+            subtitle: _('Scroll on playback controls to seek, or middle-click for a larger forward seek.'),
         });
         window._settings.bind('enable-seek', seekScrollSwitchRow, 'active', Gio.SettingsBindFlags.DEFAULT);
 

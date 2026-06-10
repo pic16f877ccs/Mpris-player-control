@@ -59,6 +59,7 @@ export default class MprisPlayerControlExtension extends Extension {
         this._playerPropertiesHandler = null;
         this._controlVolumeHandler = null;
         this._controlControlBoxHandler = null;
+        this._controlSeekClickHandler = null;
         this._trackLength = 0;
         this._soundSettingsHandler = null;
         this._progressIndicatorWidthHandler = null;
@@ -765,44 +766,63 @@ export default class MprisPlayerControlExtension extends Extension {
     }
 
     _connectSeekControlBox() {
-        if (this._controlControlBoxHandler !== null) {
-            return;
-        }
-
-        this._controlControlBoxHandler = this._controlBox.connect('scroll-event', async (_actor, event) => {
-            if (!this._mprisPlayerSeek) {
-                return Clutter.EVENT_PROPAGATE;
-            }
-
-            const direction = event.get_scroll_direction();
-
-            try {
-                const offsetUS = this._mprisPlayerSeekOffset * 1_000_000;
-
-                if (direction === Clutter.ScrollDirection.UP) {
-                    await this._mprisPlayer.SeekAsync(offsetUS);
-                    void this._showRewindIndicator();
-                } else if (direction === Clutter.ScrollDirection.DOWN) {
-                    await this._mprisPlayer.SeekAsync(-offsetUS);
-                    void this._showRewindIndicator();
-                } else {
+        if (this._controlControlBoxHandler === null) {
+            this._controlControlBoxHandler = this._controlBox.connect('scroll-event', async (_actor, event) => {
+                if (!this._mprisPlayerSeek) {
                     return Clutter.EVENT_PROPAGATE;
                 }
-            } catch (e) {
-                logError(e, 'Seek failed');
-            }
 
-            return Clutter.EVENT_STOP;
-        });
+                const direction = event.get_scroll_direction();
+
+                try {
+                    const offsetUS = this._mprisPlayerSeekOffset * 1_000_000;
+
+                    if (direction === Clutter.ScrollDirection.UP) {
+                        await this._mprisPlayer.SeekAsync(offsetUS);
+                        void this._showRewindIndicator();
+                    } else if (direction === Clutter.ScrollDirection.DOWN) {
+                        await this._mprisPlayer.SeekAsync(-offsetUS);
+                        void this._showRewindIndicator();
+                    } else {
+                        return Clutter.EVENT_PROPAGATE;
+                    }
+                } catch (e) {
+                    logError(e, 'Seek failed');
+                }
+
+                return Clutter.EVENT_STOP;
+            });
+        }
+
+        if (this._controlSeekClickHandler === null) {
+            this._controlSeekClickHandler = this._controlBox.connect('button-press-event', async (_actor, event) => {
+                if (!this._mprisPlayerSeek || event.get_button() !== Clutter.BUTTON_MIDDLE) {
+                    return Clutter.EVENT_PROPAGATE;
+                }
+
+                try {
+                    const largeOffsetUS = this._mprisPlayerSeekOffset * 5 * 1_000_000;
+                    await this._mprisPlayer.SeekAsync(largeOffsetUS);
+                    void this._showRewindIndicator();
+                } catch (e) {
+                    logError(e, 'Fast-forward seek failed');
+                }
+
+                return Clutter.EVENT_STOP;
+            });
+        }
     }
 
     _disconnectSeekControlBox() {
-        if (this._controlControlBoxHandler === null) {
-            return;
+        if (this._controlControlBoxHandler !== null) {
+            this._controlBox.disconnect(this._controlControlBoxHandler);
+            this._controlControlBoxHandler = null;
         }
 
-        this._controlBox.disconnect(this._controlControlBoxHandler);
-        this._controlControlBoxHandler = null;
+        if (this._controlSeekClickHandler !== null) {
+            this._controlBox.disconnect(this._controlSeekClickHandler);
+            this._controlSeekClickHandler = null;
+        }
     }
 
     _connectPlaybackIcons(layout) {
