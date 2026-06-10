@@ -346,6 +346,7 @@ export default class MprisPlayerControlExtension extends Extension {
             x_expand: true,
             y_expand: true,
         });
+        this._controlBox.reactive = true;
         this._controlBox.set_style(spacing);
 
         this._forwardIcon = new St.Icon({
@@ -772,33 +773,30 @@ export default class MprisPlayerControlExtension extends Extension {
         this._activatePlaybackIcons(layout);
     }
 
-    _connectSeekForwardIcon(layout) {
-        if (layout.includes('Forward')) {
-            if (this._controlIconsHandlers['Scroll'] === null) {
-                this._controlIconsHandlers['Scroll'] = this._forwardIcon.connect( 'scroll-event', async (actor, event) => {
-                    const direction = event.get_scroll_direction();
+_connectSeekForwardIcon() {
+    this._controlIconsHandlers['Scroll'] =
+        this._controlBox.connect('scroll-event', async (actor, event) => {
+            const direction = event.get_scroll_direction();
 
-                    try {
-                        const mprisPlayerSeekOffset = this._mprisPlayerSeekOffset * 1_000_000;
-                        if (direction === Clutter.ScrollDirection.UP) {
-                            await this._mprisPlayer.SeekAsync(mprisPlayerSeekOffset);
-                            this._showRewindIndicator();
-                        } else if (direction === Clutter.ScrollDirection.DOWN) {
-                            await this._mprisPlayer.SeekAsync(-mprisPlayerSeekOffset);
-                            this._showRewindIndicator();
-                        } else {
-                            return Clutter.EVENT_PROPAGATE;
-                        }
-                    } catch (e) {
-                        logError(e, "Seek failed");
-                    }
+            try {
+                const offsetUS = this._mprisPlayerSeekOffset * 1_000_000;
 
-                    return Clutter.EVENT_STOP;
-
-                });
+                if (direction === Clutter.ScrollDirection.UP) {
+                    await this._mprisPlayer.SeekAsync(offsetUS);
+                    void this._showRewindIndicator();
+                } else if (direction === Clutter.ScrollDirection.DOWN) {
+                    await this._mprisPlayer.SeekAsync(-offsetUS);
+                    void this._showRewindIndicator();
+                } else {
+                    return Clutter.EVENT_PROPAGATE;
+                }
+            } catch (e) {
+                logError(e, 'Seek failed');
             }
-        }
-    }
+
+            return Clutter.EVENT_STOP;
+        });
+}
 
     _connectPlaybackIcons(layout) {
         if (layout.includes('Forward')) {
