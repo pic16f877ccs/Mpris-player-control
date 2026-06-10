@@ -106,18 +106,6 @@ export default class MprisPlayerControlExtension extends Extension {
 
         this._playerSeekScrollHandler = this._settings.connect('changed::enable-seek', (settings, key) => {
             this._mprisPlayerSeek = settings.get_boolean(key);
-            if (this._mprisPlayer) {
-                if (this._mprisPlayer.PlaybackStatus === 'Playing') {
-                    if (this._mprisPlayerSeek) {
-                        const child = this._getStatusChild(['Forward'])[0];
-                        if (child) {
-                            this._connectSeekForwardIcon([child.get_name()]);
-                        }
-                    } else {
-                        this._disconnectPlaybackIcons(['Scroll']);
-                    }
-                }
-            }
         });
 
         this._indicator?._clickGesture?.set_enabled(false);
@@ -554,6 +542,7 @@ export default class MprisPlayerControlExtension extends Extension {
 
             this._connectPlayerProperties();
             this._connectVolumeControl();
+            this._connectSeekForwardIcon();
 
               this._updatePlayerIcon();
 
@@ -773,9 +762,16 @@ export default class MprisPlayerControlExtension extends Extension {
         this._activatePlaybackIcons(layout);
     }
 
-_connectSeekForwardIcon() {
-    this._controlIconsHandlers['Scroll'] =
-        this._controlBox.connect('scroll-event', async (actor, event) => {
+    _connectSeekForwardIcon() {
+        if (this._controlIconsHandlers['Scroll'] !== null) {
+            return;
+        }
+
+        this._controlIconsHandlers['Scroll'] = this._controlBox.connect('scroll-event', async (_actor, event) => {
+            if (!this._mprisPlayerSeek) {
+                return Clutter.EVENT_PROPAGATE;
+            }
+
             const direction = event.get_scroll_direction();
 
             try {
@@ -796,7 +792,16 @@ _connectSeekForwardIcon() {
 
             return Clutter.EVENT_STOP;
         });
-}
+    }
+
+    _disconnectSeekForwardIcon() {
+        if (this._controlIconsHandlers['Scroll'] === null) {
+            return;
+        }
+
+        this._controlBox.disconnect(this._controlIconsHandlers['Scroll']);
+        this._controlIconsHandlers['Scroll'] = null;
+    }
 
     _connectPlaybackIcons(layout) {
         if (layout.includes('Forward')) {
@@ -911,6 +916,7 @@ _connectSeekForwardIcon() {
         this._removePlayerAppIcon();
         this._disconnectPlayerProperties();
         this._disconnectVolumeControl();
+        this._disconnectSeekForwardIcon();
         this._dbusProxyProperties = null;
         this._trackLabel.clutter_text.set_width(1);
         this._trackLabel.set_text(null);
@@ -935,13 +941,6 @@ _connectSeekForwardIcon() {
             if (this._controlIconsHandlers[key] !== null) { 
                 child.disconnect(this._controlIconsHandlers[key]);
                 this._controlIconsHandlers[key] = null;
-            }
-
-            if (key === "Forward") {
-                if (this._controlIconsHandlers["Scroll"] !== null) { 
-                    child.disconnect(this._controlIconsHandlers["Scroll"]);
-                    this._controlIconsHandlers["Scroll"] = null;
-                }
             }
         });
 
@@ -974,6 +973,10 @@ _connectSeekForwardIcon() {
 
     _disconnectPlaybackIcons(layout) {
         layout.forEach((key) => {
+            if (key === 'Scroll') {
+                return;
+            }
+
             if (this._controlIconsHandlers[key] !== null) { 
                 this._controlIcons[key].disconnect(this._controlIconsHandlers[key]);
                 this._controlIconsHandlers[key] = null;
@@ -1004,6 +1007,7 @@ _connectSeekForwardIcon() {
         }
 
         this._disconnectPlaybackIcons(Object.keys(this._controlIconsHandlers));
+        this._disconnectSeekForwardIcon();
         this._disconnectPlayerProperties();
 
         this._mprisPlayerNames = null;
