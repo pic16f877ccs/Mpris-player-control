@@ -71,6 +71,12 @@ export default class MprisPlayerControlPreferences extends ExtensionPreferences 
         const current_icons_layout = window._settings.get_string('playback-icons-layout');
         keysLayoutComboRow.selected = controlKeysLayout.indexOf(current_icons_layout);
 
+        const seekScrollSwitchRow = new Adw.SwitchRow({
+            title: _('Enable seek scroll'),
+            subtitle: _('Scroll on the forward icon to seek through the current track.'),
+        });
+        window._settings.bind('enable-seek', seekScrollSwitchRow, 'active', Gio.SettingsBindFlags.DEFAULT);
+
         keysLayoutComboRow.connect('notify::selected-item', () => {
             const selected_index = keysLayoutComboRow.get_selected();
             window._settings.set_string('playback-icons-layout', controlKeysLayout[selected_index]);
@@ -87,12 +93,6 @@ export default class MprisPlayerControlPreferences extends ExtensionPreferences 
             window._settings.set_boolean('enable-seek', false);
             seekScrollSwitchRow.set_sensitive(false);
         }
-
-        const seekScrollSwitchRow = new Adw.SwitchRow({
-            title: _('Enable seek scroll'),
-            subtitle: _('Scroll on the forward icon to seek through the current track.'),
-        });
-        window._settings.bind('enable-seek', seekScrollSwitchRow, 'active', Gio.SettingsBindFlags.DEFAULT);
 
         const seekOffsetSpinRow = Adw.SpinRow.new_with_range(1, 20, 1);
         seekOffsetSpinRow.set_value(window._settings.get_uint('seek-offset'));
