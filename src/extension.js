@@ -44,6 +44,7 @@ export default class MprisPlayerControlExtension extends Extension {
 
         this._mprisPlayerSeekOffset = this._settings.get_uint('seek-offset');
         this._mprisPlayerSeek = this._settings.get_boolean('enable-seek');
+        this._progressIndicatorWidth = this._settings.get_uint('progress-indicator-width');
         this._DbusProxy = Gio.DBusProxy.makeProxyWrapper(FREEDESKTOP_DBUS_IFACE_XML);
         this._DbusProxyProperties = Gio.DBusProxy.makeProxyWrapper(FREEDESKTOP_DBUS_PROPERTIES_IFACE_XML);
         this._MprisProxy = Gio.DBusProxy.makeProxyWrapper(MPRIS_IFACE_XML);
@@ -59,6 +60,7 @@ export default class MprisPlayerControlExtension extends Extension {
         this._controlControlBoxHandler = null;
         this._trackLength = 0;
         this._soundSettingsHandler = null;
+        this._progressIndicatorWidthHandler = null;
 
 
         this._controlIconsHandlers = {
@@ -115,6 +117,10 @@ export default class MprisPlayerControlExtension extends Extension {
 
         this._playerSeekScrollHandler = this._settings.connect('changed::enable-seek', (settings, key) => {
             this._mprisPlayerSeek = settings.get_boolean(key);
+        });
+
+        this._progressIndicatorWidthHandler = this._settings.connect('changed::progress-indicator-width', (settings, key) => {
+            this._progressIndicatorWidth = settings.get_uint(key);
         });
 
         this._indicator.connect('button-press-event', this._onButtonPressed.bind(this));
@@ -230,9 +236,9 @@ export default class MprisPlayerControlExtension extends Extension {
         const totalUS = this._trackLength;
 
         const label = buildLabel(
-            //formatTimeUS(currentUS),
             totalUS > 0 ? formatTimeUS(currentUS) : '--:--',
-            totalUS > 0 ? formatTimeUS(totalUS) : '--:--'
+            totalUS > 0 ? formatTimeUS(totalUS) : '--:--',
+            this._progressIndicatorWidth,
         );
         
         this._showTrackProgressOsd(label, currentUS, totalUS);
@@ -1014,6 +1020,10 @@ export default class MprisPlayerControlExtension extends Extension {
             this._settings.disconnect(this._playerSeekScrollHandler);
             this._playerSeekScrollHandler = null;
         }
+        if (this._progressIndicatorWidthHandler !== null) {
+            this._settings.disconnect(this._progressIndicatorWidthHandler);
+            this._progressIndicatorWidthHandler = null;
+        }
         this._settings = null;
 
         if (this._soundSettingsHandler !== null) {
@@ -1039,15 +1049,15 @@ function formatTimeUS(us) {
         : `${minutes}:${String(seconds).padStart(2, '0')}`;
 }
 
-function buildLabel(current, total) {
-    const TOTAL_WIDTH = 32;
+function buildLabel(current, total, totalWidth = 32) {
+    const clampedWidth = Math.clamp(8, totalWidth, 80);
 
     const prefix = `${current}\u2005◔`;
     const suffix = `◕\u2005${total}`;
 
     const fillLength = Math.max(
         1,
-        TOTAL_WIDTH - prefix.length - suffix.length
+        clampedWidth - prefix.length - suffix.length
     );
 
     return `${prefix}${'━'.repeat(fillLength)}${suffix}`;

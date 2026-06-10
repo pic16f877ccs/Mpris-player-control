@@ -92,7 +92,18 @@ export default class MprisPlayerControlPreferences extends ExtensionPreferences 
             Gio.SettingsBindFlags.DEFAULT,
         );
 
+        const progressIndicatorWidthSpinRow = Adw.SpinRow.new_with_range(8, 80, 1);
+        progressIndicatorWidthSpinRow.set_value(window._settings.get_uint('progress-indicator-width'));
+        progressIndicatorWidthSpinRow.set_wrap(true);
+        progressIndicatorWidthSpinRow.set_title(_('Progress indicator width'));
+        progressIndicatorWidthSpinRow.set_subtitle(_('Set progress label width in characters.'));
+
+        window._settings.bind('progress-indicator-width', progressIndicatorWidthSpinRow, 'value',
+            Gio.SettingsBindFlags.DEFAULT,
+        );
+
         controlsGroup.add(seekOffsetSpinRow);
+        controlsGroup.add(progressIndicatorWidthSpinRow);
         controlsGroup.add(keysLayoutComboRow);
         controlsGroup.add(seekScrollSwitchRow);
     }

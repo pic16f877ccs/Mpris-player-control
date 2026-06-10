@@ -39,6 +39,13 @@
                 Specified number of seconds by the seeks forward in the current track .
             </description>
         </key>
+        <key name="progress-indicator-width" type="u">
+            <default>32</default>
+            <summary>Progress indicator width</summary>
+            <description>
+                Sets the width of the seek progress label in characters.
+            </description>
+        </key>
         <key name="list-player-names" type="a{ss}">
             <default>{"": ""}</default>
         </key>
