@@ -91,52 +91,47 @@ export default class MprisPlayerControlExtension extends Extension {
                 (mixerControl, object) => {
             }
         );
-
-        this._playbackIconHandler = this._settings.connect(
-            'changed::playback-icons-layout',
-                (settings, key) => {
-                this._playbackIconLayout = settings.get_string('playback-icons-layout');
+        
+        this._settings.connectObject(
+            'changed::playback-icons-layout', (settings, key) => {
+                this._playbackIconLayout = settings.get_string(key);
                 this._updatePlaybackIcons(this._playbackIconLayout);
             },
+            'changed::set-title-width', (settings, key) => {
+                this._titleWidth = settings.get_uint(key);
+                if (this._mprisPlayer) {
+                    this._trackLabel.clutter_text.set_width(this._titleWidth);
+                    this._settings.set_uint('get-title-width', this._trackLabel.clutter_text.get_width());
+                }
+            },
+            'changed::spacing', (settings, key) => {
+                const spacing = settings.get_uint(key);
+                this._indicatorBox.set_style(`spacing: ${spacing}px;`);
+                this._controlBox.set_style(`spacing: ${spacing}px;`);
+            },
+            'changed::seek-offset', (settings, key) => {
+                this._mprisPlayerSeekOffset = settings.get_uint(key);
+            },
+            'changed::enable-seek', (settings, key) => {
+                this._mprisPlayerSeek = settings.get_boolean(key);
+            },
+            'changed::progress-indicator-width', (settings, key) => {
+                this._progressIndicatorWidth = settings.get_uint(key);
+            },
+            'changed::show-progress-indicator', (settings, key) => {
+                this._showProgressIndicator = settings.get_boolean(key);
+            },
+            this
         );
 
-        this._labelWidthHandler = this._settings.connect('changed::set-title-width', (settings, key) => {
-            this._titleWidth = settings.get_uint(key);
-            if (this._mprisPlayer) {
-                this._trackLabel.clutter_text.set_width(this._titleWidth);
-                this._settings.set_uint('get-title-width', this._trackLabel.clutter_text.get_width());
-            }
-        });
-
-        this._indicatorItemSpacingHandler = this._settings.connect('changed::spacing', (settings, key) => {
-            const spacing = settings.get_uint(key);
-            this._indicatorBox.set_style(`spacing: ${spacing}px;`);
-            this._controlBox.set_style(`spacing: ${spacing}px;`);
-        });
-
-        this._playerOffsetHandler = this._settings.connect('changed::seek-offset', (settings, key) => {
-            this._mprisPlayerSeekOffset = settings.get_uint(key);
-        });
-
-        this._playerSeekScrollHandler = this._settings.connect('changed::enable-seek', (settings, key) => {
-            this._mprisPlayerSeek = settings.get_boolean(key);
-        });
-
-        this._progressIndicatorWidthHandler = this._settings.connect('changed::progress-indicator-width', (settings, key) => {
-            this._progressIndicatorWidth = settings.get_uint(key);
-        });
-
-        this._showProgressIndicatorHandler = this._settings.connect('changed::show-progress-indicator', (settings, key) => {
-            this._showProgressIndicator = settings.get_boolean(key);
-        });
+        this._soundSettings.connectObject(
+            `changed::${ALLOW_AMPLIFIED_VOLUME_KEY}`, () => {
+                this._allowAmplified = this._soundSettings.get_boolean(ALLOW_AMPLIFIED_VOLUME_KEY);
+            },
+            this
+        );
 
         this._indicator.connect('button-press-event', this._onButtonPressed.bind(this));
-
-        this._soundSettingsHandler = this._soundSettings.connect(`changed::${ALLOW_AMPLIFIED_VOLUME_KEY}`,
-            () => {
-                this._allowAmplified = this._soundSettings.get_boolean(ALLOW_AMPLIFIED_VOLUME_KEY);
-            }
-        );
     }
 
     _connectVolumeControl() {
@@ -1042,6 +1037,12 @@ export default class MprisPlayerControlExtension extends Extension {
     }
 
     disable() {
+        this._settings.disconnectObject(this);
+        this._settings = null;
+
+        this._soundSettings.disconnectObject(this);
+        this._soundSettings = null;
+
         if (this._dbusProxyHandler !== null) {
             this._dbusProxy.disconnectSignal(this._dbusProxyHandler);
             this._dbusProxyHandler = null;
@@ -1052,42 +1053,6 @@ export default class MprisPlayerControlExtension extends Extension {
         this._disconnectPlayerProperties();
 
         this._mprisPlayerNames = null;
-
-        if (this._playbackIconHandler !== null) {
-            this._settings.disconnect(this._playbackIconHandler);
-            this._playbackIconHandler = null;
-        }
-        if (this._labelWidthHandler !== null) {
-            this._settings.disconnect(this._labelWidthHandler);
-            this._labelWidthHandler = null;
-        }
-        if (this._indicatorItemSpacingHandler !== null) {
-            this._settings.disconnect(this._indicatorItemSpacingHandler);
-            this._indicatorItemSpacingHandler = null;
-        }
-        if (this._playerOffsetHandler !== null) {
-            this._settings.disconnect(this._playerOffsetHandler);
-            this._playerOffsetHandler = null;
-        }
-        if (this._playerSeekScrollHandler !== null) {
-            this._settings.disconnect(this._playerSeekScrollHandler);
-            this._playerSeekScrollHandler = null;
-        }
-        if (this._progressIndicatorWidthHandler !== null) {
-            this._settings.disconnect(this._progressIndicatorWidthHandler);
-            this._progressIndicatorWidthHandler = null;
-        }
-        if (this._showProgressIndicatorHandler !== null) {
-            this._settings.disconnect(this._showProgressIndicatorHandler);
-            this._showProgressIndicatorHandler = null;
-        }
-        this._settings = null;
-
-        if (this._soundSettingsHandler !== null) {
-            this._soundSettings.disconnect(this._soundSettingsHandler);
-            this._soundSettingsHandler = null;
-        }
-        this._soundSettings = null;
 
         this._indicator?.destroy();
         this._indicator = null;
