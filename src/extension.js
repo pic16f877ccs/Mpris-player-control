@@ -28,6 +28,11 @@ export default class MprisPlayerControlExtension extends Extension {
         this._settings = this.getSettings();
         this._playbackIconLayout = this._settings.get_string('playback-icons-layout');
         this._titleWidth = this._settings.get_uint('set-title-width');
+        this._activePlayerName = this._settings.get_string('active-player-name');
+        this._mprisPlayerSeekOffset = this._settings.get_uint('seek-offset');
+        this._mprisPlayerSeek = this._settings.get_boolean('enable-seek');
+        this._progressIndicatorWidth = this._settings.get_uint('progress-indicator-width');
+        this._showProgressIndicator = this._settings.get_boolean('show-progress-indicator');
 
         this._soundSettings = new Gio.Settings({
             schema_id: 'org.gnome.desktop.sound',
@@ -42,17 +47,12 @@ export default class MprisPlayerControlExtension extends Extension {
         const monitorIndex = global.display.get_current_monitor();
         this._osdWindow = new OsdProgressWindow(monitorIndex);
 
-        this._mprisPlayerSeekOffset = this._settings.get_uint('seek-offset');
-        this._mprisPlayerSeek = this._settings.get_boolean('enable-seek');
-        this._progressIndicatorWidth = this._settings.get_uint('progress-indicator-width');
-        this._showProgressIndicator = this._settings.get_boolean('show-progress-indicator');
         this._DbusProxy = Gio.DBusProxy.makeProxyWrapper(FREEDESKTOP_DBUS_IFACE_XML);
         this._DbusProxyProperties = Gio.DBusProxy.makeProxyWrapper(FREEDESKTOP_DBUS_PROPERTIES_IFACE_XML);
         this._MprisProxy = Gio.DBusProxy.makeProxyWrapper(MPRIS_IFACE_XML);
         this._MprisPlayerProxy = Gio.DBusProxy.makeProxyWrapper(MPRIS_PLAYER_IFACE_XML);
         this._dbusProxyHandler = null;
         this._mprisPlayerNames = [];
-        this._activePlayerName = this._settings.get_string('active-player-name');
         this._activePlayerIndex = 0;
         this._listPlayerNames = {};
         this._mprisPlayer = null;
@@ -535,6 +535,7 @@ export default class MprisPlayerControlExtension extends Extension {
                 this._mprisPlayerNames[mprisPlayerIndex],
                 MPRIS_OBJECT_PATH
             );
+            this._connectPlayerProperties();
 
             await this._dbusProperties(this._mprisPlayerNames[mprisPlayerIndex]);
 
@@ -543,11 +544,9 @@ export default class MprisPlayerControlExtension extends Extension {
                 return;
             }
 
-            this._connectPlayerProperties();
             this._connectVolumeControl();
             this._connectSeekControlBox();
-
-              this._updatePlayerIcon();
+            this._updatePlayerIcon();
 
             const metadata = {};
             for (const property in this._mprisPlayer.Metadata) {
@@ -796,21 +795,25 @@ export default class MprisPlayerControlExtension extends Extension {
 
         if (this._controlSeekClickHandler === null) {
             this._controlSeekClickHandler = this._controlBox.connect('button-press-event', async (_actor, event) => {
-                if (!this._mprisPlayerSeek || event.get_button() !== Clutter.BUTTON_MIDDLE) {
-                    return Clutter.EVENT_PROPAGATE;
-                }
-
-                try {
-                    const largeOffsetUS = this._mprisPlayerSeekOffset * 5 * 1_000_000;
-                    await this._mprisPlayer.SeekAsync(largeOffsetUS);
-                    void this._showRewindIndicator();
-                } catch (e) {
-                    logError(e, 'Fast-forward seek failed');
-                }
-
-                return Clutter.EVENT_STOP;
+                return await this._handleMiddleClickSeek(event);
             });
         }
+    }
+
+    async _handleMiddleClickSeek(event) {
+        if (!this._mprisPlayerSeek || event.get_button() !== Clutter.BUTTON_MIDDLE) {
+            return Clutter.EVENT_PROPAGATE;
+        }
+
+        try {
+            const largeOffsetUS = this._mprisPlayerSeekOffset * 5 * 1_000_000;
+            await this._mprisPlayer.SeekAsync(largeOffsetUS);
+            void this._showRewindIndicator();
+        } catch (e) {
+            logError(e, 'Fast-forward seek failed');
+        }
+
+        return Clutter.EVENT_STOP;
     }
 
     _disconnectSeekControlBox() {
@@ -829,6 +832,11 @@ export default class MprisPlayerControlExtension extends Extension {
         if (layout.includes('Forward')) {
             if (this._controlIconsHandlers['Forward'] === null) { 
                 this._controlIconsHandlers['Forward'] = this._forwardIcon.connect('button-press-event', async (actor, event) => {
+                    const middleClickResult = await this._handleMiddleClickSeek(event);
+                    if (middleClickResult === Clutter.EVENT_STOP) {
+                        return Clutter.EVENT_STOP;
+                    }
+
                     if (event.get_button() === Clutter.BUTTON_PRIMARY) {
                         try {
                             await this._mprisPlayer.NextAsync();
@@ -849,6 +857,11 @@ export default class MprisPlayerControlExtension extends Extension {
         if (layout.includes('Backward')) {
             if (this._controlIconsHandlers['Backward'] === null) { 
                 this._controlIconsHandlers['Backward'] = this._backwardIcon.connect('button-press-event', async (actor, event) => {
+                    const middleClickResult = await this._handleMiddleClickSeek(event);
+                    if (middleClickResult === Clutter.EVENT_STOP) {
+                        return Clutter.EVENT_STOP;
+                    }
+
                     if (event.get_button() === Clutter.BUTTON_PRIMARY) {
                         try {
                             await this._mprisPlayer.PreviousAsync();
@@ -869,6 +882,11 @@ export default class MprisPlayerControlExtension extends Extension {
         if (layout.includes('Stopped')) {
             if (this._controlIconsHandlers['Stopped'] === null) { 
                 this._controlIconsHandlers['Stopped'] = this._stopIcon.connect('button-press-event', async (actor, event) => {
+                    const middleClickResult = await this._handleMiddleClickSeek(event);
+                    if (middleClickResult === Clutter.EVENT_STOP) {
+                        return Clutter.EVENT_STOP;
+                    }
+
                     if (event.get_button() === Clutter.BUTTON_PRIMARY) {
                         try {
                             await this._mprisPlayer.StopAsync();
@@ -1003,6 +1021,11 @@ export default class MprisPlayerControlExtension extends Extension {
     }
 
     async _playPause(actor, event) {
+        const middleClickResult = await this._handleMiddleClickSeek(event);
+        if (middleClickResult === Clutter.EVENT_STOP) {
+            return Clutter.EVENT_STOP;
+        }
+
         if (event.get_button() === Clutter.BUTTON_PRIMARY) {
             try {
                 await this._mprisPlayer.PlayPauseAsync();
