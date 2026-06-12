@@ -234,7 +234,10 @@ export default class MprisPlayerControlExtension extends Extension {
                 this._indicator.menu.addMenuItem(emptyItem);
             } else {
                 for (const [player_id, player_name] of Object.entries(this._listPlayerNames)) {
-                    const item = new PopupMenu.PopupMenuItem(player_name);
+                    const label = (typeof player_name === 'string' && player_name.trim())
+                        ? player_name.trim()
+                        : (player_id?.split('.').pop()?.trim() || _('Unknown player'));
+                    const item = new PopupMenu.PopupMenuItem(label);
                     item.connect("activate", () => {
                         this._activePlayerIndex = this._getActivePlayerIndex(player_id);
                         if (this._activePlayerIndex === null)
@@ -387,7 +390,7 @@ export default class MprisPlayerControlExtension extends Extension {
             await this._dbus();
 
             this._mprisPlayerNames = await this._extractMprisPlayersNames();
-            this._mprisPlayerNames.forEach(name => this._addPlayerName(name));
+            await Promise.all(this._mprisPlayerNames.map(name => this._addPlayerName(name)));
 
             const auto = this._settings.get_boolean("auto-select");
 
@@ -457,7 +460,9 @@ export default class MprisPlayerControlExtension extends Extension {
                 return;
             }
 
-            this._listPlayerNames[name] = this._getPlayerName(mpris);
+            const playerName = this._getPlayerName(mpris)?.trim();
+            const fallbackName = name?.split('.').pop()?.trim();
+            this._listPlayerNames[name] = playerName || fallbackName || _('Unknown player');
 
             this._settings.set_value(
                 'list-player-names',
@@ -543,7 +548,6 @@ export default class MprisPlayerControlExtension extends Extension {
     async _dbus() {
         try {
             this._dbusProxy =  await new this._DbusProxy(
-                Gio.DBus.session,
                 FREEDESKTOP_DBUS_IFACE_PATH,
                 FREEDESKTOP_DBUS_OBJECT_PATH,
             );
