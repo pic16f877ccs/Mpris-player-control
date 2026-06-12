@@ -12,10 +12,12 @@ import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import {getMixerControl} from 'resource:///org/gnome/shell/ui/status/volume.js';
 import {OsdProgressWindow} from './osdProgress.js';
 
-import {ALLOW_AMPLIFIED_VOLUME_KEY, AUDIO_VOLUME_ICONS, CONTROL_KEYS_LAYOUT,
+import {
+    ALLOW_AMPLIFIED_VOLUME_KEY, AUDIO_VOLUME_ICONS, CONTROL_KEYS_LAYOUT,
     FREEDESKTOP_DBUS_IFACE_PATH, FREEDESKTOP_DBUS_OBJECT_PATH, FREEDESKTOP_DBUS_IFACE_XML,
     FREEDESKTOP_DBUS_PROPERTIES_IFACE_XML, MPRIS_IFACE_PATH, MPRIS_OBJECT_PATH,
     MPRIS_PLAYER_IFACE_XML, MPRIS_IFACE_XML, FREEDESKTOP_DBUS_INDEX, TRIPLE_CONTROL_KEYS,
+    DbusProxy, DbusProxyProperties, MprisProxy, MprisPlayerProxy,
 } from './constants.js';
 
 export default class MprisPlayerControlExtension extends Extension {
@@ -24,11 +26,6 @@ export default class MprisPlayerControlExtension extends Extension {
         this._indicator?._clickGesture?.set_enabled(false);
 
         this._initSettings();
-
-        this._DbusProxy = Gio.DBusProxy.makeProxyWrapper(FREEDESKTOP_DBUS_IFACE_XML);
-        this._DbusProxyProperties = Gio.DBusProxy.makeProxyWrapper(FREEDESKTOP_DBUS_PROPERTIES_IFACE_XML);
-        this._MprisProxy = Gio.DBusProxy.makeProxyWrapper(MPRIS_IFACE_XML);
-        this._MprisPlayerProxy = Gio.DBusProxy.makeProxyWrapper(MPRIS_PLAYER_IFACE_XML);
 
         this._trackLength = 0;
         this._activePlayerIndex = 0;
@@ -488,7 +485,7 @@ export default class MprisPlayerControlExtension extends Extension {
                 this._disconnectPlayerProperties();
             }
 
-            this._mprisPlayer = await new this._MprisPlayerProxy(
+            this._mprisPlayer = await new MprisPlayerProxy(
                 Gio.DBus.session,
                 this._mprisPlayerNames[mprisPlayerIndex],
                 MPRIS_OBJECT_PATH
@@ -521,7 +518,7 @@ export default class MprisPlayerControlExtension extends Extension {
     
     async _dbus() {
         try {
-            this._dbusProxy =  await new this._DbusProxy(
+            this._dbusProxy =  await new DbusProxy(
                 Gio.DBus.session,
                 FREEDESKTOP_DBUS_IFACE_PATH,
                 FREEDESKTOP_DBUS_OBJECT_PATH,
@@ -546,7 +543,7 @@ export default class MprisPlayerControlExtension extends Extension {
                 return;
             }
 
-            this._dbusProxyProperties =  await new this._DbusProxyProperties(
+            this._dbusProxyProperties =  await new DbusProxyProperties(
                 Gio.DBus.session,
                 playerName,
                 MPRIS_OBJECT_PATH
@@ -622,7 +619,7 @@ export default class MprisPlayerControlExtension extends Extension {
 
     async _mpris(mprisPlayerName) {
         try {
-            return await new this._MprisProxy(
+            return await new MprisProxy(
                 Gio.DBus.session,
                 mprisPlayerName,
                 MPRIS_OBJECT_PATH,

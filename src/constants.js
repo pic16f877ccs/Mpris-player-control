@@ -1,3 +1,5 @@
+import Gio from 'gi://Gio';
+
 export const MPRIS_IFACE_PATH = "org.mpris.MediaPlayer2"; 
 export const MPRIS_OBJECT_PATH = "/org/mpris/MediaPlayer2"; 
 export const MPRIS_PLAYER_IFACE_XML = `
@@ -83,6 +85,10 @@ export const FREEDESKTOP_DBUS_PROPERTIES_IFACE_XML = `
   </interface>
 </node>`;
 
+export const DbusProxy = Gio.DBusProxy.makeProxyWrapper(FREEDESKTOP_DBUS_IFACE_XML);
+export const DbusProxyProperties = Gio.DBusProxy.makeProxyWrapper(FREEDESKTOP_DBUS_PROPERTIES_IFACE_XML);
+export const MprisProxy = Gio.DBusProxy.makeProxyWrapper(MPRIS_IFACE_XML);
+export const MprisPlayerProxy = Gio.DBusProxy.makeProxyWrapper(MPRIS_PLAYER_IFACE_XML);
 export const TRIPLE_CONTROL_KEYS = ['Stopped', 'Playing', 'Paused'];
 export const CONTROL_KEYS_LAYOUT = {
     'minimal': ['Stopped'],
