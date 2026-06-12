@@ -89,6 +89,7 @@ export const DbusProxy = Gio.DBusProxy.makeProxyWrapper(FREEDESKTOP_DBUS_IFACE_X
 export const DbusProxyProperties = Gio.DBusProxy.makeProxyWrapper(FREEDESKTOP_DBUS_PROPERTIES_IFACE_XML);
 export const MprisProxy = Gio.DBusProxy.makeProxyWrapper(MPRIS_IFACE_XML);
 export const MprisPlayerProxy = Gio.DBusProxy.makeProxyWrapper(MPRIS_PLAYER_IFACE_XML);
+
 export const TRIPLE_CONTROL_KEYS = ['Stopped', 'Playing', 'Paused'];
 export const CONTROL_KEYS_LAYOUT = {
     'minimal': ['Stopped'],

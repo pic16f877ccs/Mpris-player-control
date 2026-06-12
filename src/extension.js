@@ -379,29 +379,6 @@ export default class MprisPlayerControlExtension extends Extension {
         }
     }
 
-//    async _initMprisPlayer() {
-//        try {
-//            await this._dbus();
-//
-//            this._mprisPlayerNames = await this._extractMprisPlayersNames();
-//            this._mprisPlayerNames.forEach((name) => { this._addPlayerName(name) });
-//
-//            if (!this._settings.get_boolean("auto-select")) {
-//                this._activePlayerIndex = this._getActivePlayerIndex();
-//
-//                if (this._activePlayerIndex === null) {
-//                    return;
-//                }
-//            } else {
-//                this._activePlayerIndex = 0;
-//            }
-//
-//            this._addPlayerProxy(this._activePlayerIndex);
-//        } catch (e) {
-//            logError(e, 'could not initialize MPRIS player');
-//        }
-//    }
-
     // Returns position in microseconds.
     // Returns 0 if unavailable.
     async _position() {
