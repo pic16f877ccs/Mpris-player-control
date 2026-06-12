@@ -1051,6 +1051,7 @@ export default class MprisPlayerControlExtension extends Extension {
             this._dbusProxyHandler = null;
         }
 
+        this._disconnectVolumeControl();
         this._disconnectPlaybackIcons(Object.keys(this._controlIconsHandlers));
         this._disconnectSeekControlBox();
         this._disconnectPlayerProperties();
