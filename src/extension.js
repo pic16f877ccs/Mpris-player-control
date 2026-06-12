@@ -23,24 +23,7 @@ export default class MprisPlayerControlExtension extends Extension {
         this._indicator = new PanelMenu.Button(0.5, this.metadata.name, false);
         this._indicator?._clickGesture?.set_enabled(false);
 
-        this._settings = this.getSettings();
-        this._playbackIconLayout = this._settings.get_string('playback-icons-layout');
-        this._titleWidth = this._settings.get_uint('set-title-width');
-        this._activePlayerName = this._settings.get_string('active-player-name');
-        this._mprisPlayerSeekOffset = this._settings.get_uint('seek-offset');
-        this._mprisPlayerSeek = this._settings.get_boolean('enable-seek');
-        this._progressIndicatorWidth = this._settings.get_uint('progress-indicator-width');
-        this._showProgressIndicator = this._settings.get_boolean('show-progress-indicator');
-
-        this._soundSettings = new Gio.Settings({
-            schema_id: 'org.gnome.desktop.sound',
-        });
-        this._allowAmplified = this._soundSettings.get_boolean(ALLOW_AMPLIFIED_VOLUME_KEY);
-
-        if (!Object.keys(CONTROL_KEYS_LAYOUT).includes(this._playbackIconLayout)) {
-            this._playbackIconLayout = 'standard';
-            this._settings.set_string('playback-icons-layout', this._playbackIconLayout);
-        }
+        this._initSettings();
 
         this._DbusProxy = Gio.DBusProxy.makeProxyWrapper(FREEDESKTOP_DBUS_IFACE_XML);
         this._DbusProxyProperties = Gio.DBusProxy.makeProxyWrapper(FREEDESKTOP_DBUS_PROPERTIES_IFACE_XML);
@@ -1015,6 +998,28 @@ export default class MprisPlayerControlExtension extends Extension {
         }
 
         return Clutter.EVENT_PROPAGATE;
+    }
+
+    _initSettings() {
+        this._settings = this.getSettings();
+
+        this._playbackIconLayout = this._settings.get_string('playback-icons-layout');
+        this._titleWidth = this._settings.get_uint('set-title-width');
+        this._activePlayerName = this._settings.get_string('active-player-name');
+        this._mprisPlayerSeekOffset = this._settings.get_uint('seek-offset');
+        this._mprisPlayerSeek = this._settings.get_boolean('enable-seek');
+        this._progressIndicatorWidth = this._settings.get_uint('progress-indicator-width');
+        this._showProgressIndicator = this._settings.get_boolean('show-progress-indicator');
+
+        this._soundSettings = new Gio.Settings({
+            schema_id: 'org.gnome.desktop.sound',
+        });
+        this._allowAmplified = this._soundSettings.get_boolean(ALLOW_AMPLIFIED_VOLUME_KEY);
+
+        if (!Object.keys(CONTROL_KEYS_LAYOUT).includes(this._playbackIconLayout)) {
+            this._playbackIconLayout = 'standard';
+            this._settings.set_string('playback-icons-layout', this._playbackIconLayout);
+        }
     }
 
     _initSignalConnects() {
