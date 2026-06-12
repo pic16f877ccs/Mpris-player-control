@@ -1036,7 +1036,7 @@ export default class MprisPlayerControlExtension extends Extension {
             this
         );
 
-        this._indicator.connect('button-press-event', this._onButtonPressed.bind(this));
+        this._indicator.connectObject('button-press-event', this._onButtonPressed.bind(this), this);
     }
 
     disable() {
@@ -1058,11 +1058,7 @@ export default class MprisPlayerControlExtension extends Extension {
 
         this._mprisPlayerNames = null;
 
-        if (this._onButtonPressedHandler !== null) {
-            this._indicator.disconnect(this._onButtonPressedHandler);
-            this._onButtonPressedHandler = null;
-        }
-
+        this._indicator?.disconnectObject(this);
         this._indicator?.destroy();
         this._indicator = null;
     }
