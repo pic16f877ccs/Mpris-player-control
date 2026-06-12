@@ -55,6 +55,7 @@ export default class MprisPlayerControlExtension extends Extension {
         this._DbusProxyProperties = Gio.DBusProxy.makeProxyWrapper(FREEDESKTOP_DBUS_PROPERTIES_IFACE_XML);
         this._MprisProxy = Gio.DBusProxy.makeProxyWrapper(MPRIS_IFACE_XML);
         this._MprisPlayerProxy = Gio.DBusProxy.makeProxyWrapper(MPRIS_PLAYER_IFACE_XML);
+
         this._trackLength = 0;
         this._activePlayerIndex = 0;
         this._mprisPlayerNames = [];
@@ -80,27 +81,12 @@ export default class MprisPlayerControlExtension extends Extension {
 
         const monitorIndex = global.display.get_current_monitor();
         this._osdWindow = new OsdProgressWindow(monitorIndex);
+        this._volumeMixerControl = getMixerControl();
 
         this._initPlayerIndicator();
         this._addPlaybackIcons(this._playbackIconLayout);
-        this._initMprisPlayer();
         this._initSignalConnects();
-        
-        this._soundSettings.connectObject(
-            `changed::${ALLOW_AMPLIFIED_VOLUME_KEY}`, () => {
-                this._allowAmplified = this._soundSettings.get_boolean(ALLOW_AMPLIFIED_VOLUME_KEY);
-            },
-            this
-        );
-
-        this._volumeMixerControl = getMixerControl();
-        this._volumeMixerControlHandler = this._volumeMixerControl.connect(
-                'stream-added',
-                (mixerControl, object) => {
-            }
-        );
-
-        this._indicator.connect('button-press-event', this._onButtonPressed.bind(this));
+        this._initMprisPlayer();
     }
 
     _connectVolumeControl() {
@@ -1067,6 +1053,15 @@ export default class MprisPlayerControlExtension extends Extension {
             },
             this
         );
+        
+        this._soundSettings.connectObject(
+            `changed::${ALLOW_AMPLIFIED_VOLUME_KEY}`, () => {
+                this._allowAmplified = this._soundSettings.get_boolean(ALLOW_AMPLIFIED_VOLUME_KEY);
+            },
+            this
+        );
+
+        this._indicator.connect('button-press-event', this._onButtonPressed.bind(this));
     }
 
     disable() {
