@@ -67,9 +67,9 @@ export default class MprisPlayerControlExtension extends Extension {
             this._controlVolumeHandler = this._trackLabel.connect('scroll-event', (actor, event) => {
                 const direction = event.get_scroll_direction();
                 if (direction === Clutter.ScrollDirection.UP) {
-                    this._getStream(0.25);
+                    this._adjustStreamVolume(0.25);
                 } else if (direction === Clutter.ScrollDirection.DOWN) {
-                    this._getStream(-0.25);
+                    this._adjustStreamVolume(-0.25);
                 } else {
                     return Clutter.EVENT_PROPAGATE;
                 }
@@ -88,7 +88,7 @@ export default class MprisPlayerControlExtension extends Extension {
         }
     }
 
-    _getStream(increment) {
+    _adjustStreamVolume(increment) {
         if (this._mprisProxy === null) {
             return;
         }
