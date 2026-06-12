@@ -548,6 +548,7 @@ export default class MprisPlayerControlExtension extends Extension {
     async _dbus() {
         try {
             this._dbusProxy =  await new this._DbusProxy(
+                Gio.DBus.session,
                 FREEDESKTOP_DBUS_IFACE_PATH,
                 FREEDESKTOP_DBUS_OBJECT_PATH,
             );
