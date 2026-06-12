@@ -85,8 +85,6 @@ export default class MprisPlayerControlExtension extends Extension {
         this._initMprisPlayer();
         this._initSignalConnects();
         
-    }
-
         this._soundSettings.connectObject(
             `changed::${ALLOW_AMPLIFIED_VOLUME_KEY}`, () => {
                 this._allowAmplified = this._soundSettings.get_boolean(ALLOW_AMPLIFIED_VOLUME_KEY);
