@@ -1058,6 +1058,11 @@ export default class MprisPlayerControlExtension extends Extension {
 
         this._mprisPlayerNames = null;
 
+        if (this._onButtonPressedHandler !== null) {
+            this._indicator.disconnect(this._onButtonPressedHandler);
+            this._onButtonPressedHandler = null;
+        }
+
         this._indicator?.destroy();
         this._indicator = null;
     }
