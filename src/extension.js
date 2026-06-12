@@ -19,6 +19,13 @@ import {CONTROL_KEYS_LAYOUT, FREEDESKTOP_DBUS_IFACE_PATH, FREEDESKTOP_DBUS_OBJEC
 } from './constants.js';
 
 const ALLOW_AMPLIFIED_VOLUME_KEY = 'allow-volume-above-100-percent';
+const AUDIO_VOLUME_ICONS = [
+    'audio-volume-muted-symbolic',
+    'audio-volume-low-symbolic',
+    'audio-volume-medium-symbolic',
+    'audio-volume-high-symbolic',
+    'audio-volume-overamplified-symbolic',
+];
 
 export default class MprisPlayerControlExtension extends Extension {
     enable() {
@@ -43,9 +50,6 @@ export default class MprisPlayerControlExtension extends Extension {
             this._playbackIconLayout = 'standard';
             this._settings.set_string('playback-icons-layout', this._playbackIconLayout);
         }
-
-        const monitorIndex = global.display.get_current_monitor();
-        this._osdWindow = new OsdProgressWindow(monitorIndex);
 
         this._DbusProxy = Gio.DBusProxy.makeProxyWrapper(FREEDESKTOP_DBUS_IFACE_XML);
         this._DbusProxyProperties = Gio.DBusProxy.makeProxyWrapper(FREEDESKTOP_DBUS_PROPERTIES_IFACE_XML);
@@ -74,48 +78,14 @@ export default class MprisPlayerControlExtension extends Extension {
             'Forward': null,
         };
 
-        this._audioVolumeIcons = [
-            'audio-volume-muted-symbolic',
-            'audio-volume-low-symbolic',
-            'audio-volume-medium-symbolic',
-            'audio-volume-high-symbolic',
-            'audio-volume-overamplified-symbolic',
-        ];
+        const monitorIndex = global.display.get_current_monitor();
+        this._osdWindow = new OsdProgressWindow(monitorIndex);
 
         this._initPlayerControlBox();
         this._initMprisPlayer();
+        this._initSignalConnects();
         
-        this._settings.connectObject(
-            'changed::playback-icons-layout', (settings, key) => {
-                this._playbackIconLayout = settings.get_string(key);
-                this._updatePlaybackIcons(this._playbackIconLayout);
-            },
-            'changed::set-title-width', (settings, key) => {
-                this._titleWidth = settings.get_uint(key);
-                if (this._mprisPlayer) {
-                    this._trackLabel.clutter_text.set_width(this._titleWidth);
-                    this._settings.set_uint('get-title-width', this._trackLabel.clutter_text.get_width());
-                }
-            },
-            'changed::spacing', (settings, key) => {
-                const spacing = settings.get_uint(key);
-                this._indicatorBox.set_style(`spacing: ${spacing}px;`);
-                this._controlBox.set_style(`spacing: ${spacing}px;`);
-            },
-            'changed::seek-offset', (settings, key) => {
-                this._mprisPlayerSeekOffset = settings.get_uint(key);
-            },
-            'changed::enable-seek', (settings, key) => {
-                this._mprisPlayerSeek = settings.get_boolean(key);
-            },
-            'changed::progress-indicator-width', (settings, key) => {
-                this._progressIndicatorWidth = settings.get_uint(key);
-            },
-            'changed::show-progress-indicator', (settings, key) => {
-                this._showProgressIndicator = settings.get_boolean(key);
-            },
-            this
-        );
+    }
 
         this._soundSettings.connectObject(
             `changed::${ALLOW_AMPLIFIED_VOLUME_KEY}`, () => {
@@ -172,7 +142,7 @@ export default class MprisPlayerControlExtension extends Extension {
             return 0;
         }
 
-        return Math.clamp(Math.ceil(3 * volume / maxVolume), 1, this._audioVolumeIcons.length - 1);
+        return Math.clamp(Math.ceil(3 * volume / maxVolume), 1, AUDIO_VOLUME_ICONS.length - 1);
     }
 
     _getStream(increment) {
@@ -201,7 +171,7 @@ export default class MprisPlayerControlExtension extends Extension {
 
         const gicon = new Gio.ThemedIcon(
             {
-                name: this._audioVolumeIcons[this._getIcon(
+                name: AUDIO_VOLUME_ICONS[this._getIcon(
                         stream,
                         this._volumeMixerControl.get_vol_max_norm(),
                     )
@@ -1066,6 +1036,40 @@ export default class MprisPlayerControlExtension extends Extension {
         }
 
         return Clutter.EVENT_PROPAGATE;
+    }
+
+    _initSignalConnects() {
+        this._settings.connectObject(
+            'changed::playback-icons-layout', (settings, key) => {
+                this._playbackIconLayout = settings.get_string(key);
+                this._updatePlaybackIcons(this._playbackIconLayout);
+            },
+            'changed::set-title-width', (settings, key) => {
+                this._titleWidth = settings.get_uint(key);
+                if (this._mprisPlayer) {
+                    this._trackLabel.clutter_text.set_width(this._titleWidth);
+                    this._settings.set_uint('get-title-width', this._trackLabel.clutter_text.get_width());
+                }
+            },
+            'changed::spacing', (settings, key) => {
+                const spacing = settings.get_uint(key);
+                this._indicatorBox.set_style(`spacing: ${spacing}px;`);
+                this._controlBox.set_style(`spacing: ${spacing}px;`);
+            },
+            'changed::seek-offset', (settings, key) => {
+                this._mprisPlayerSeekOffset = settings.get_uint(key);
+            },
+            'changed::enable-seek', (settings, key) => {
+                this._mprisPlayerSeek = settings.get_boolean(key);
+            },
+            'changed::progress-indicator-width', (settings, key) => {
+                this._progressIndicatorWidth = settings.get_uint(key);
+            },
+            'changed::show-progress-indicator', (settings, key) => {
+                this._showProgressIndicator = settings.get_boolean(key);
+            },
+            this
+        );
     }
 
     disable() {
