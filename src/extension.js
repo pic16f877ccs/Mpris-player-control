@@ -9,7 +9,7 @@ import {Extension, gettext as _} from 'resource:///org/gnome/shell/extensions/ex
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
-import {getMixerControl as _mixerControl} from 'resource:///org/gnome/shell/ui/status/volume.js';
+import {getMixerControl} from 'resource:///org/gnome/shell/ui/status/volume.js';
 import {OsdProgressWindow} from './osdProgress.js';
 
 import {CONTROL_KEYS_LAYOUT, FREEDESKTOP_DBUS_IFACE_PATH, FREEDESKTOP_DBUS_OBJECT_PATH,
@@ -51,20 +51,20 @@ export default class MprisPlayerControlExtension extends Extension {
         this._DbusProxyProperties = Gio.DBusProxy.makeProxyWrapper(FREEDESKTOP_DBUS_PROPERTIES_IFACE_XML);
         this._MprisProxy = Gio.DBusProxy.makeProxyWrapper(MPRIS_IFACE_XML);
         this._MprisPlayerProxy = Gio.DBusProxy.makeProxyWrapper(MPRIS_PLAYER_IFACE_XML);
-        this._dbusProxyHandler = null;
-        this._mprisPlayerNames = [];
+        this._trackLength = 0;
         this._activePlayerIndex = 0;
+        this._mprisPlayerNames = [];
         this._listPlayerNames = {};
         this._mprisPlayer = null;
+
+        this._dbusProxyHandler = null;
         this._playerPropertiesHandler = null;
         this._controlVolumeHandler = null;
         this._controlControlBoxHandler = null;
         this._controlSeekClickHandler = null;
-        this._trackLength = 0;
         this._soundSettingsHandler = null;
         this._progressIndicatorWidthHandler = null;
         this._showProgressIndicatorHandler = null;
-
 
         this._controlIconsHandlers = {
             'Backward': null,
@@ -84,13 +84,6 @@ export default class MprisPlayerControlExtension extends Extension {
 
         this._initPlayerControlBox();
         this._initMprisPlayer();
-
-        this._volumeMixerControl = _mixerControl();
-        this._volumeMixerControlHandler = this._volumeMixerControl.connect(
-                'stream-added',
-                (mixerControl, object) => {
-            }
-        );
         
         this._settings.connectObject(
             'changed::playback-icons-layout', (settings, key) => {
@@ -129,6 +122,13 @@ export default class MprisPlayerControlExtension extends Extension {
                 this._allowAmplified = this._soundSettings.get_boolean(ALLOW_AMPLIFIED_VOLUME_KEY);
             },
             this
+        );
+
+        this._volumeMixerControl = getMixerControl();
+        this._volumeMixerControlHandler = this._volumeMixerControl.connect(
+                'stream-added',
+                (mixerControl, object) => {
+            }
         );
 
         this._indicator.connect('button-press-event', this._onButtonPressed.bind(this));
@@ -281,7 +281,10 @@ export default class MprisPlayerControlExtension extends Extension {
                 for (const [player_id, player_name] of Object.entries(this._listPlayerNames)) {
                     const item = new PopupMenu.PopupMenuItem(player_name);
                     item.connect("activate", () => {
-                        this._activePlayerIndex = this._mprisPlayerNames.indexOf(player_id);
+                        this._activePlayerIndex = this._getActivePlayerIndex(player_id);
+                        if (this._activePlayerIndex === null)
+                            return;
+
                         this._selectPlayer(this._activePlayerIndex);
 
                         this._activePlayerName = player_id;
@@ -421,28 +424,56 @@ export default class MprisPlayerControlExtension extends Extension {
         Main.panel.addToStatusArea(this.uuid, this._indicator);
     }
 
+    _getActivePlayerIndex(activePlayerName) {
+        const index = this._mprisPlayerNames?.indexOf(activePlayerName);
+        return index >= 0 ? index : null;
+    }
+
     async _initMprisPlayer() {
         try {
             await this._dbus();
 
             this._mprisPlayerNames = await this._extractMprisPlayersNames();
-            this._mprisPlayerNames.forEach((name) => { this._addPlayerName(name) });
+            this._mprisPlayerNames.forEach(name => this._addPlayerName(name));
 
-            if (!this._settings.get_boolean("auto-select")) {
-                this._activePlayerIndex = this._mprisPlayerNames.indexOf(this._activePlayerName);
+            const auto = this._settings.get_boolean("auto-select");
 
-                if (this._activePlayerIndex === -1) {
-                    return;
-                }
-            } else {
-                this._activePlayerIndex = 0;
-            }
+            this._activePlayerIndex = auto
+                ? 0
+                : this._getActivePlayerIndex(this._activePlayerName);
+
+            if (this._activePlayerIndex === null)
+                return;
 
             this._addPlayerProxy(this._activePlayerIndex);
+
         } catch (e) {
             logError(e, 'could not initialize MPRIS player');
         }
     }
+
+//    async _initMprisPlayer() {
+//        try {
+//            await this._dbus();
+//
+//            this._mprisPlayerNames = await this._extractMprisPlayersNames();
+//            this._mprisPlayerNames.forEach((name) => { this._addPlayerName(name) });
+//
+//            if (!this._settings.get_boolean("auto-select")) {
+//                this._activePlayerIndex = this._getActivePlayerIndex();
+//
+//                if (this._activePlayerIndex === null) {
+//                    return;
+//                }
+//            } else {
+//                this._activePlayerIndex = 0;
+//            }
+//
+//            this._addPlayerProxy(this._activePlayerIndex);
+//        } catch (e) {
+//            logError(e, 'could not initialize MPRIS player');
+//        }
+//    }
 
     // Returns position in microseconds.
     // Returns 0 if unavailable.
@@ -615,11 +646,12 @@ export default class MprisPlayerControlExtension extends Extension {
                 this._addPlayerName(name);
 
                 if (!this._settings.get_boolean("auto-select")) {
-                    this._activePlayerIndex = this._mprisPlayerNames.indexOf(this._activePlayerName);
+                    this._activePlayerIndex = this._getActivePlayerIndex(this._activePlayerName);
 
-                    if (this._activePlayerIndex === -1) {
+                    if (this._activePlayerIndex === null) {
                         return;
                     }
+
                     this._addPlayerProxy(this._activePlayerIndex);
                     return;
 
@@ -635,8 +667,8 @@ export default class MprisPlayerControlExtension extends Extension {
             }
 
             if (oldOwner) {
-                const index = this._mprisPlayerNames.indexOf(name);
-                if (index === -1) {
+                const index = this._getActivePlayerIndex(name);
+                if (index === null) {
                     return;
                 }
 
@@ -1037,10 +1069,10 @@ export default class MprisPlayerControlExtension extends Extension {
     }
 
     disable() {
-        this._settings.disconnectObject(this);
+        this._settings?.disconnectObject(this);
         this._settings = null;
 
-        this._soundSettings.disconnectObject(this);
+        this._soundSettings?.disconnectObject(this);
         this._soundSettings = null;
 
         if (this._dbusProxyHandler !== null) {
