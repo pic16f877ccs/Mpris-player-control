@@ -107,7 +107,7 @@ export default class MprisPlayerControlExtension extends Extension {
 
         const step = maxVolume / 30;
         let newVolume = stream.volume + step * increment;
-        newVolume = Math.round(Math.clamp(0, newVolume, maxVolume));
+        newVolume = Math.round(Math.clamp(newVolume, 0, maxVolume));
 
         stream.volume = newVolume;
         stream.push_volume();
