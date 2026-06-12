@@ -12,20 +12,11 @@ import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import {getMixerControl} from 'resource:///org/gnome/shell/ui/status/volume.js';
 import {OsdProgressWindow} from './osdProgress.js';
 
-import {CONTROL_KEYS_LAYOUT, FREEDESKTOP_DBUS_IFACE_PATH, FREEDESKTOP_DBUS_OBJECT_PATH,
-    FREEDESKTOP_DBUS_IFACE_XML,
+import {ALLOW_AMPLIFIED_VOLUME_KEY, AUDIO_VOLUME_ICONS, CONTROL_KEYS_LAYOUT,
+    FREEDESKTOP_DBUS_IFACE_PATH, FREEDESKTOP_DBUS_OBJECT_PATH, FREEDESKTOP_DBUS_IFACE_XML,
     FREEDESKTOP_DBUS_PROPERTIES_IFACE_XML, MPRIS_IFACE_PATH, MPRIS_OBJECT_PATH,
     MPRIS_PLAYER_IFACE_XML, MPRIS_IFACE_XML, FREEDESKTOP_DBUS_INDEX, TRIPLE_CONTROL_KEYS,
 } from './constants.js';
-
-const ALLOW_AMPLIFIED_VOLUME_KEY = 'allow-volume-above-100-percent';
-const AUDIO_VOLUME_ICONS = [
-    'audio-volume-muted-symbolic',
-    'audio-volume-low-symbolic',
-    'audio-volume-medium-symbolic',
-    'audio-volume-high-symbolic',
-    'audio-volume-overamplified-symbolic',
-];
 
 export default class MprisPlayerControlExtension extends Extension {
     enable() {

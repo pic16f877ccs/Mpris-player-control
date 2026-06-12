@@ -58,8 +58,6 @@ export const MPRIS_IFACE_XML = `
   </interface>
 </node>`;
 
-//export const FREEDESKTOP_DBUS_PROPERTIES_IFACE_PATH = "org.freedesktop.DBus.Properties";
-//export const FREEDESKTOP_DBUS_PROPERTIES_OBJECT_PATH = "/org/freedesktop/DBus.Properties";
 export const FREEDESKTOP_DBUS_PROPERTIES_IFACE_XML = `
 <node>
   <interface name="org.freedesktop.DBus.Properties">
@@ -92,3 +90,12 @@ export const CONTROL_KEYS_LAYOUT = {
     'standard': ['Backward', 'Stopped', 'Forward'],
     'full': ['Backward', 'Playing', 'Stopped', 'Forward'],
 };
+
+export const ALLOW_AMPLIFIED_VOLUME_KEY = 'allow-volume-above-100-percent';
+export const AUDIO_VOLUME_ICONS = [
+    'audio-volume-muted-symbolic',
+    'audio-volume-low-symbolic',
+    'audio-volume-medium-symbolic',
+    'audio-volume-high-symbolic',
+    'audio-volume-overamplified-symbolic',
+];
