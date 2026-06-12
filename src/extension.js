@@ -81,7 +81,8 @@ export default class MprisPlayerControlExtension extends Extension {
         const monitorIndex = global.display.get_current_monitor();
         this._osdWindow = new OsdProgressWindow(monitorIndex);
 
-        this._initPlayerControlBox();
+        this._initPlayerIndicator();
+        this._addPlaybackIcons(this._playbackIconLayout);
         this._initMprisPlayer();
         this._initSignalConnects();
         
@@ -303,7 +304,7 @@ export default class MprisPlayerControlExtension extends Extension {
         return Clutter.EVENT_PROPAGATE;
     }
 
-    _initPlayerControlBox() {
+    _initPlayerIndicator() {
         this._indicatorBox = new St.BoxLayout({
             orientation: Clutter.Orientation.HORIZONTAL,
             x_expand: true,
@@ -374,8 +375,6 @@ export default class MprisPlayerControlExtension extends Extension {
             'Playing': this._playIcon,
             'Forward': this._forwardIcon,
         };
-
-        this._addPlaybackIcons(this._playbackIconLayout);
 
         this._trackLabel = new St.Label({
             style_class: "message-title",
