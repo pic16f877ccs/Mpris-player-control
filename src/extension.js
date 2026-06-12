@@ -88,19 +88,6 @@ export default class MprisPlayerControlExtension extends Extension {
         }
     }
 
-    _getIcon(stream, maxVolume) {
-        if (!stream) {
-            return null;
-        }
-
-        const volume = stream.volume;
-        if (stream.is_muted || volume <= 0) {
-            return 0;
-        }
-
-        return Math.clamp(Math.ceil(3 * volume / maxVolume), 1, AUDIO_VOLUME_ICONS.length - 1);
-    }
-
     _getStream(increment) {
         if (this._mprisProxy === null) {
             return;
@@ -127,7 +114,7 @@ export default class MprisPlayerControlExtension extends Extension {
 
         const gicon = new Gio.ThemedIcon(
             {
-                name: AUDIO_VOLUME_ICONS[this._getIcon(
+                name: AUDIO_VOLUME_ICONS[getVolumeIconIndex(
                         stream,
                         this._volumeMixerControl.get_vol_max_norm(),
                     )
@@ -1088,4 +1075,17 @@ function buildLabel(current, total, totalWidth = 32) {
     );
 
     return `${prefix}${'━'.repeat(fillLength)}${suffix}`;
+}
+
+function getVolumeIconIndex(stream, maxVolume) {
+    if (!stream) {
+        return null;
+    }
+
+    const volume = stream.volume;
+    if (stream.is_muted || volume <= 0) {
+        return 0;
+    }
+
+    return Math.clamp(Math.ceil(3 * volume / maxVolume), 1, AUDIO_VOLUME_ICONS.length - 1);
 }
