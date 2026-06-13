@@ -92,6 +92,16 @@ export default class MprisPlayerControlPreferences extends ExtensionPreferences 
             Gio.SettingsBindFlags.DEFAULT,
         );
 
+        const preferredVolumeSpinRow = Adw.SpinRow.new_with_range(0, 150, 1);
+        preferredVolumeSpinRow.set_value(window._settings.get_uint('preferred-volume'));
+        preferredVolumeSpinRow.set_wrap(true);
+        preferredVolumeSpinRow.set_title(_('Preferred volume level'));
+        preferredVolumeSpinRow.set_subtitle(_('Middle-click the track label to apply this saved percentage. Values above 100 require amplified volume support.'));
+
+        window._settings.bind('preferred-volume', preferredVolumeSpinRow, 'value',
+            Gio.SettingsBindFlags.DEFAULT,
+        );
+
         const progressIndicatorWidthSpinRow = Adw.SpinRow.new_with_range(8, 80, 1);
         progressIndicatorWidthSpinRow.set_value(window._settings.get_uint('progress-indicator-width'));
         progressIndicatorWidthSpinRow.set_wrap(true);
@@ -112,6 +122,7 @@ export default class MprisPlayerControlPreferences extends ExtensionPreferences 
         );
 
         controlsGroup.add(seekOffsetSpinRow);
+        controlsGroup.add(preferredVolumeSpinRow);
         controlsGroup.add(progressIndicatorWidthSpinRow);
         controlsGroup.add(showProgressIndicatorSwitchRow);
         controlsGroup.add(keysLayoutComboRow);

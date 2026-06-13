@@ -36,6 +36,7 @@ export default class MprisPlayerControlExtension extends Extension {
         this._dbusProxyHandler = null;
         this._playerPropertiesHandler = null;
         this._controlVolumeHandler = null;
+        this._preferredVolumeHandler = null;
         this._controlControlBoxHandler = null;
         this._controlSeekClickHandler = null;
         this._soundSettingsHandler = null;
@@ -77,6 +78,17 @@ export default class MprisPlayerControlExtension extends Extension {
                 return Clutter.EVENT_STOP;
             });
         }
+
+        if (this._preferredVolumeHandler === null) {
+            this._preferredVolumeHandler = this._trackLabel.connect('button-press-event', (_actor, event) => {
+                if (event.get_button() !== Clutter.BUTTON_MIDDLE) {
+                    return Clutter.EVENT_PROPAGATE;
+                }
+
+                this._applyPreferredVolume();
+                return Clutter.EVENT_STOP;
+            });
+        }
     }
 
     _disconnectVolumeControl() {
@@ -86,24 +98,21 @@ export default class MprisPlayerControlExtension extends Extension {
             this._trackLabel.disconnect(this._controlVolumeHandler);
             this._controlVolumeHandler = null;
         }
+
+        if (this._preferredVolumeHandler !== null) {
+            this._trackLabel.disconnect(this._preferredVolumeHandler);
+            this._preferredVolumeHandler = null;
+        }
     }
 
     _adjustStreamVolume(increment) {
-        if (this._mprisProxy === null) {
+        const stream = this._getActiveStream();
+        if (!stream) {
             return;
         }
 
-        const activePlayerName = this._mprisProxy?.Identity ?? 'System Volume (Global)';
-        const streamList = this._volumeMixerControl.get_streams().filter(stream => 
-            stream.get_name() === activePlayerName
-        );
-        const stream = streamList.length === 0 ? this._volumeMixerControl.get_default_sink() : streamList[0];
-
-        let maxVolume = this._volumeMixerControl.get_vol_max_norm();
-
-        if (this._allowAmplified) {
-            maxVolume = this._volumeMixerControl.get_vol_max_amplified();
-        }
+        const activePlayerName = this._getActivePlayerIdentity();
+        const maxVolume = this._getMaxVolume();
 
         const step = maxVolume / 30;
         let newVolume = stream.volume + step * increment;
@@ -111,6 +120,58 @@ export default class MprisPlayerControlExtension extends Extension {
 
         stream.volume = newVolume;
         stream.push_volume();
+
+        this._showVolumeOsd(stream, activePlayerName, maxVolume);
+    }
+
+    _applyPreferredVolume() {
+        const stream = this._getActiveStream();
+        if (!stream) {
+            return;
+        }
+
+        const activePlayerName = this._getActivePlayerIdentity();
+        const maxVolume = this._getMaxVolume();
+        const preferredPercent = this._allowAmplified
+            ? Math.clamp(this._preferredVolume, 0, 150)
+            : Math.clamp(this._preferredVolume, 0, 100);
+
+        const newVolume = Math.round((preferredPercent / 100) * this._volumeMixerControl.get_vol_max_norm());
+        stream.volume = Math.clamp(newVolume, 0, maxVolume);
+        stream.push_volume();
+
+        this._showVolumeOsd(stream, activePlayerName, maxVolume);
+    }
+
+    _getActivePlayerIdentity() {
+        return this._mprisProxy?.Identity ?? 'System Volume (Global)';
+    }
+
+    _getActiveStream() {
+        if (this._mprisProxy === null) {
+            return null;
+        }
+
+        const activePlayerName = this._getActivePlayerIdentity();
+        const streamList = this._volumeMixerControl.get_streams().filter(stream =>
+            stream.get_name() === activePlayerName
+        );
+
+        return streamList.length === 0
+            ? this._volumeMixerControl.get_default_sink()
+            : streamList[0];
+    }
+
+    _getMaxVolume() {
+        return this._allowAmplified
+            ? this._volumeMixerControl.get_vol_max_amplified()
+            : this._volumeMixerControl.get_vol_max_norm();
+    }
+
+    _showVolumeOsd(stream, activePlayerName, maxVolume) {
+        if (!stream) {
+            return;
+        }
 
         const gicon = new Gio.ThemedIcon(
             {
@@ -125,7 +186,7 @@ export default class MprisPlayerControlExtension extends Extension {
         const maxLevel = maxVolume / this._volumeMixerControl.get_vol_max_norm();
         this._showAll(
             gicon, activePlayerName,
-            newVolume / this._volumeMixerControl.get_vol_max_norm(),
+            stream.volume / this._volumeMixerControl.get_vol_max_norm(),
             maxLevel,
         );
     }
@@ -969,6 +1030,7 @@ export default class MprisPlayerControlExtension extends Extension {
         this._activePlayerName = this._settings.get_string('active-player-name');
         this._mprisPlayerSeekOffset = this._settings.get_uint('seek-offset');
         this._mprisPlayerSeek = this._settings.get_boolean('enable-seek');
+        this._preferredVolume = this._settings.get_uint('preferred-volume');
         this._progressIndicatorWidth = this._settings.get_uint('progress-indicator-width');
         this._showProgressIndicator = this._settings.get_boolean('show-progress-indicator');
 
@@ -1006,6 +1068,9 @@ export default class MprisPlayerControlExtension extends Extension {
             },
             'changed::enable-seek', (settings, key) => {
                 this._mprisPlayerSeek = settings.get_boolean(key);
+            },
+            'changed::preferred-volume', (settings, key) => {
+                this._preferredVolume = settings.get_uint(key);
             },
             'changed::progress-indicator-width', (settings, key) => {
                 this._progressIndicatorWidth = settings.get_uint(key);

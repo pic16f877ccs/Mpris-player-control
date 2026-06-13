@@ -53,6 +53,13 @@
                 Shows the seek progress OSD indicator when scrolling to seek.
             </description>
         </key>
+        <key name="preferred-volume" type="u">
+            <default>50</default>
+            <summary>Preferred volume level</summary>
+            <description>
+                Stores the preferred volume level as a percentage. Middle-clicking the track label applies this saved value.
+            </description>
+        </key>
         <key name="list-player-names" type="a{ss}">
             <default>{"": ""}</default>
         </key>
