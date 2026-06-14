@@ -4,7 +4,7 @@ import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 
 import {ExtensionPreferences, gettext as _} from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
-import {CONTROL_KEYS_LAYOUT} from './constants.js';
+import {CONTROL_KEYS_LAYOUT, IndicatorFlexibility} from './constants.js';
 
 export default class MprisPlayerControlPreferences extends ExtensionPreferences {
     fillPreferencesWindow(window) {
@@ -52,8 +52,45 @@ export default class MprisPlayerControlPreferences extends ExtensionPreferences 
             });
         });
 
+        const flexibilityOptions = [
+            {
+                label: _('Fixed maximal'),
+                value: IndicatorFlexibility.fixedMaximal,
+            },
+            {
+                label: _('Adaptive'),
+                value: IndicatorFlexibility.adaptive,
+            },
+            {
+                label: _('Fixed minimal'),
+                value: IndicatorFlexibility.fixedMinimal,
+            },
+        ];
+        const flexibilityModel = Gtk.StringList.new(flexibilityOptions.map(option => option.label));
+
+        const flexibilityComboRow = new Adw.ComboRow({
+            title: _('Indicator width behavior'),
+            subtitle: _('Choose fixed maximal, adaptive, or fixed minimal behavior.'),
+            model: flexibilityModel,
+        });
+
+        const currentFlexibility = window._settings.get_uint('indicator-flexibility');
+        const currentFlexibilityIndex = flexibilityOptions.findIndex(option => option.value === currentFlexibility);
+        flexibilityComboRow.selected = currentFlexibilityIndex >= 0
+            ? currentFlexibilityIndex
+            : flexibilityOptions.findIndex(option => option.value === IndicatorFlexibility.adaptive);
+
+        flexibilityComboRow.connect('notify::selected-item', () => {
+            const selectedIndex = flexibilityComboRow.get_selected();
+            const selectedOption = flexibilityOptions[selectedIndex];
+            if (selectedOption) {
+                window._settings.set_uint('indicator-flexibility', selectedOption.value);
+            }
+        });
+
         appearanceGroup.add(spacingSpinRow);
         appearanceGroup.add(titleWidthSpinRow);
+        appearanceGroup.add(flexibilityComboRow);
         
         const controlsGroup = new Adw.PreferencesGroup({ title: _('Controls')});
         controlsGroup.set_separate_rows?.(true);
@@ -96,7 +133,7 @@ export default class MprisPlayerControlPreferences extends ExtensionPreferences 
         preferredVolumeSpinRow.set_value(window._settings.get_uint('preferred-volume'));
         preferredVolumeSpinRow.set_wrap(true);
         preferredVolumeSpinRow.set_title(_('Preferred volume level'));
-        preferredVolumeSpinRow.set_subtitle(_('Middle-click the track label to apply this saved percentage. Values above 100 require amplified volume support.'));
+        preferredVolumeSpinRow.set_subtitle(_('Middle-click the player icon to apply this saved percentage. Values above 100 require amplified volume support.'));
 
         window._settings.bind('preferred-volume', preferredVolumeSpinRow, 'value',
             Gio.SettingsBindFlags.DEFAULT,

@@ -17,7 +17,7 @@ import {
     FREEDESKTOP_DBUS_IFACE_PATH, FREEDESKTOP_DBUS_OBJECT_PATH, FREEDESKTOP_DBUS_IFACE_XML,
     FREEDESKTOP_DBUS_PROPERTIES_IFACE_XML, MPRIS_IFACE_PATH, MPRIS_OBJECT_PATH,
     MPRIS_PLAYER_IFACE_XML, MPRIS_IFACE_XML, FREEDESKTOP_DBUS_INDEX, TRIPLE_CONTROL_KEYS,
-    DbusProxy, DbusProxyProperties, MprisProxy, MprisPlayerProxy,
+    IndicatorFlexibility, DbusProxy, DbusProxyProperties, MprisProxy, MprisPlayerProxy,
 } from './constants.js';
 
 export default class MprisPlayerControlExtension extends Extension {
@@ -28,6 +28,7 @@ export default class MprisPlayerControlExtension extends Extension {
         this._initSettings();
 
         this._trackLength = 0;
+        this._currentTrackTitle = null;
         this._activePlayerIndex = 0;
         this._mprisPlayerNames = [];
         this._listPlayerNames = {};
@@ -61,11 +62,39 @@ export default class MprisPlayerControlExtension extends Extension {
         this._initMprisPlayer();
     }
 
+    _updateIndicatorFlexibility() {
+        const hasTitle = typeof this._currentTrackTitle === 'string' && this._currentTrackTitle.length > 0;
+
+        if(IndicatorFlexibility.fixedMaximal === this._flexibility) {
+            this._trackLabel.clutter_text.set_width(this._titleWidth);
+            if(hasTitle) {
+                this._trackLabel.remove_style_pseudo_class('insensitive');
+                this._trackLabel.set_text(this._currentTrackTitle);
+            } else {
+                this._trackLabel.add_style_pseudo_class('insensitive');
+                this._trackLabel.set_text(_('Unknown title'));
+            }
+        } else if(IndicatorFlexibility.adaptive === this._flexibility) {
+            if(hasTitle) {
+                this._trackLabel.clutter_text.set_width(this._titleWidth);
+                this._trackLabel.remove_style_pseudo_class('insensitive');
+                this._trackLabel.set_text(this._currentTrackTitle);
+            } else {
+                this._trackLabel.clutter_text.set_width(null);
+                this._trackLabel.add_style_pseudo_class('insensitive');
+                this._trackLabel.set_text('');
+            }
+        } else if(IndicatorFlexibility.fixedMinimal === this._flexibility) {
+            this._trackLabel.clutter_text.set_width(null);
+            this._trackLabel.set_text('');
+        }
+    }
+
     _connectVolumeControl() {
-        this._trackLabel.reactive = true;
+        this._playerIcon.reactive = true;
 
         if (this._controlVolumeHandler === null) {
-            this._controlVolumeHandler = this._trackLabel.connect('scroll-event', (actor, event) => {
+            this._controlVolumeHandler = this._playerIcon.connect('scroll-event', (_actor, event) => {
                 const direction = event.get_scroll_direction();
                 if (direction === Clutter.ScrollDirection.UP) {
                     this._adjustStreamVolume(0.25);
@@ -80,7 +109,7 @@ export default class MprisPlayerControlExtension extends Extension {
         }
 
         if (this._preferredVolumeHandler === null) {
-            this._preferredVolumeHandler = this._trackLabel.connect('button-press-event', (_actor, event) => {
+            this._preferredVolumeHandler = this._playerIcon.connect('button-press-event', (_actor, event) => {
                 if (event.get_button() !== Clutter.BUTTON_MIDDLE) {
                     return Clutter.EVENT_PROPAGATE;
                 }
@@ -92,15 +121,15 @@ export default class MprisPlayerControlExtension extends Extension {
     }
 
     _disconnectVolumeControl() {
-        this._trackLabel.reactive = false;
+        this._playerIcon.reactive = false;
 
         if (this._controlVolumeHandler !== null) {
-            this._trackLabel.disconnect(this._controlVolumeHandler);
+            this._playerIcon.disconnect(this._controlVolumeHandler);
             this._controlVolumeHandler = null;
         }
 
         if (this._preferredVolumeHandler !== null) {
-            this._trackLabel.disconnect(this._preferredVolumeHandler);
+            this._playerIcon.disconnect(this._preferredVolumeHandler);
             this._preferredVolumeHandler = null;
         }
     }
@@ -302,8 +331,10 @@ export default class MprisPlayerControlExtension extends Extension {
 
             this._indicator.menu.open();
 
-            settingsMenuItem.connect('activate', (item, event) => {
-                this.openPreferences();
+            settingsMenuItem.connect('activate', () => {
+                void this.openPreferences().catch(e => {
+                    logError(e, 'failed to open extension preferences');
+                });
             });
 
             return Clutter.EVENT_STOP;
@@ -374,6 +405,7 @@ export default class MprisPlayerControlExtension extends Extension {
             fallback_icon_name: 'audio-x-generic-symbolic',
             style_class: 'player-icon',
         });
+        this._playerIcon.reactive = false;
         this._playerIcon.add_style_pseudo_class('insensitive');
 
         this._controlIcons = {
@@ -385,12 +417,13 @@ export default class MprisPlayerControlExtension extends Extension {
         };
 
         this._trackLabel = new St.Label({
-            style_class: "message-title",
+            style_class: 'track-title',
         });
-        this._trackLabel.clutter_text.set_width(1);
+        this._trackLabel.reactive = false;
+        this._trackLabel.add_style_pseudo_class('insensitive');
         this._trackLabel.clutter_text.y_align = Clutter.ActorAlign.CENTER;
         this._trackLabel.clutter_text.ellipsize = Pango.EllipsizeMode.END;
-
+        this._updateIndicatorFlexibility();
         this._indicatorBox.add_child(this._playerIcon);
         this._indicatorBox.add_child(this._trackLabel);
         this._indicatorBox.add_child(this._controlBox);
@@ -427,8 +460,6 @@ export default class MprisPlayerControlExtension extends Extension {
         }
     }
 
-    // Returns position in microseconds.
-    // Returns 0 if unavailable.
     async _position() {
         try {
             if (!this._dbusProxyProperties)
@@ -484,13 +515,12 @@ export default class MprisPlayerControlExtension extends Extension {
     }
 
     _updateTrackInfo(metadata) {
-        const trackTitle = typeof metadata['xesam:title'] === 'string'
+        this._currentTrackTitle = typeof metadata['xesam:title'] === 'string'
             ? metadata['xesam:title']
             : _('Unknown title');
 
         this._updateTrackLength(metadata);
-        this._trackLabel.clutter_text.set_width(this._titleWidth);
-        this._trackLabel.set_text(trackTitle);
+        this._updateIndicatorFlexibility();
     }
 
     _updateTrackLength(metadata) {
@@ -714,9 +744,8 @@ export default class MprisPlayerControlExtension extends Extension {
     _stop(selectChild, layout) {
         const statusChild = this._getStatusChild(selectChild);
         this._disablePlaybackIcons(Object.keys(this._controlIconsHandlers));
-
-        this._trackLabel.clutter_text.set_width(1);
-        this._trackLabel.set_text(null);
+        this._currentTrackTitle = null;
+        this._updateIndicatorFlexibility();
 
         if (statusChild.includes(this._stopIcon)) {
             if (statusChild.includes(this._pauseIcon)) {
@@ -939,8 +968,8 @@ export default class MprisPlayerControlExtension extends Extension {
         this._disconnectVolumeControl();
         this._disconnectSeekControlBox();
         this._dbusProxyProperties = null;
-        this._trackLabel.clutter_text.set_width(1);
-        this._trackLabel.set_text(null);
+        this._currentTrackTitle = null;
+        this._updateIndicatorFlexibility();
         this._mprisPlayer = null;
     }
 
@@ -1027,6 +1056,7 @@ export default class MprisPlayerControlExtension extends Extension {
 
         this._playbackIconLayout = this._settings.get_string('playback-icons-layout');
         this._titleWidth = this._settings.get_uint('set-title-width');
+        this._flexibility = this._settings.get_uint('indicator-flexibility');
         this._activePlayerName = this._settings.get_string('active-player-name');
         this._mprisPlayerSeekOffset = this._settings.get_uint('seek-offset');
         this._mprisPlayerSeek = this._settings.get_boolean('enable-seek');
@@ -1043,6 +1073,11 @@ export default class MprisPlayerControlExtension extends Extension {
             this._playbackIconLayout = 'standard';
             this._settings.set_string('playback-icons-layout', this._playbackIconLayout);
         }
+
+        if (!Object.values(IndicatorFlexibility).includes(this._flexibility)) {
+            this._flexibility = IndicatorFlexibility.adaptive;
+            this._settings.set_uint('indicator-flexibility', this._flexibility);
+        }
     }
 
     _initSignalConnects() {
@@ -1053,10 +1088,12 @@ export default class MprisPlayerControlExtension extends Extension {
             },
             'changed::set-title-width', (settings, key) => {
                 this._titleWidth = settings.get_uint(key);
-                if (this._mprisPlayer) {
-                    this._trackLabel.clutter_text.set_width(this._titleWidth);
-                    this._settings.set_uint('get-title-width', this._trackLabel.clutter_text.get_width());
-                }
+                this._updateIndicatorFlexibility();
+                this._settings.set_uint('get-title-width', this._trackLabel.clutter_text.get_width());
+            },
+            'changed::indicator-flexibility', (settings, key) => {
+                this._flexibility = settings.get_uint(key);
+                this._updateIndicatorFlexibility();
             },
             'changed::spacing', (settings, key) => {
                 const spacing = settings.get_uint(key);

@@ -22,6 +22,14 @@
                 Specifies the maximum width, in pixels, of the track title label before it is ellipsized.
             </description>
         </key>
+        <key name="indicator-flexibility" type="u">
+            <default>1</default>
+            <summary>Indicator width flexibility</summary>
+            <description>
+                Controls how strictly the indicator width follows the configured title width.
+                0 = fixed maximal, 1 = adaptive, 2 = fixed minimal.
+            </description>
+        </key>
         <key name="get-title-width" type="u">
             <default>0</default>
         </key>

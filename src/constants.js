@@ -106,3 +106,9 @@ export const AUDIO_VOLUME_ICONS = [
     'audio-volume-high-symbolic',
     'audio-volume-overamplified-symbolic',
 ];
+
+export const IndicatorFlexibility = Object.freeze({
+  fixedMaximal: 0,
+    adaptive: 1,
+  fixedMinimal: 2,
+});
