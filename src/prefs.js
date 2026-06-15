@@ -36,6 +36,13 @@ export default class MprisPlayerControlPreferences extends ExtensionPreferences 
         titleWidthSpinRow.set_title(_('Track title width'));
         titleWidthSpinRow.set_subtitle(_('Set max track title width before it truncates with an ellipsis.'));
 
+        const updateTitleWidthSensitivity = () => {
+            const indicatorFlexibility = window._settings.get_uint('indicator-flexibility');
+            titleWidthSpinRow.set_sensitive(indicatorFlexibility !== IndicatorFlexibility.fixedMinimal);
+        };
+
+        updateTitleWidthSensitivity();
+
         titleWidthSpinRow.connect('notify::value', () => {
             const temp_title_width = window._settings.get_uint('set-title-width');
             window._settings.set_uint('get-title-width', temp_title_width);
@@ -87,6 +94,8 @@ export default class MprisPlayerControlPreferences extends ExtensionPreferences 
                 window._settings.set_uint('indicator-flexibility', selectedOption.value);
             }
         });
+
+        window._settings.connect('changed::indicator-flexibility', updateTitleWidthSensitivity);
 
         appearanceGroup.add(spacingSpinRow);
         appearanceGroup.add(titleWidthSpinRow);
