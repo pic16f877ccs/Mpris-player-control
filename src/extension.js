@@ -92,10 +92,10 @@ export default class MprisPlayerControlExtension extends Extension {
 
             this._trackLabel.clutter_text.set_width(this._titleWidth);
             if(hasTitle) {
-                this._trackLabel.remove_style_pseudo_class('insensitive');
+                this._trackLabel.remove_style_pseudo_class('dimmed');
                 this._trackLabel.set_text(this._currentTrackTitle);
             } else {
-                this._trackLabel.add_style_pseudo_class('insensitive');
+                this._trackLabel.add_style_pseudo_class('dimmed');
                 this._trackLabel.set_text(_('Unknown title'));
             }
         } else if(IndicatorFlexibility.adaptive === this._flexibility) {
@@ -103,7 +103,7 @@ export default class MprisPlayerControlExtension extends Extension {
                 this._insertIfHasNotControlBoxChild(this._trackLabel, 1);
 
                 this._trackLabel.clutter_text.set_width(this._titleWidth);
-                this._trackLabel.remove_style_pseudo_class('insensitive');
+                this._trackLabel.remove_style_pseudo_class('dimmed');
                 this._trackLabel.set_text(this._currentTrackTitle);
             } else {
                 this._removeIndicatorBoxChildren(this._trackLabel);
@@ -371,8 +371,10 @@ export default class MprisPlayerControlExtension extends Extension {
             orientation: Clutter.Orientation.HORIZONTAL,
             x_expand: true,
             y_expand: true,
+            style_class: 'panel-button',
         });
         const spacing = `spacing: ${this._settings.get_uint('spacing')}px;`;
+        log('SSSSSSSSSSSSSSSS ' + this._indicatorBox.get_style_class_name());
         this._indicator.set_style(spacing);
         this._indicatorBox.set_style(spacing);
 
@@ -387,7 +389,7 @@ export default class MprisPlayerControlExtension extends Extension {
 
         this._forwardIcon = new St.Icon({
             icon_name: 'media-skip-forward-symbolic',
-            style_class: 'control-panel-icon',
+            style_class: 'control-panel-icon system-status-icon',
         });
         this._forwardIcon.reactive = false;
         this._forwardIcon.add_style_pseudo_class('insensitive');
@@ -395,7 +397,7 @@ export default class MprisPlayerControlExtension extends Extension {
 
         this._backwardIcon = new St.Icon({
             icon_name: 'media-skip-backward-symbolic',
-            style_class: 'control-panel-icon',
+            style_class: 'control-panel-icon system-status-icon',
         });
         this._backwardIcon.reactive = false;
         this._backwardIcon.add_style_pseudo_class('insensitive');
@@ -403,7 +405,7 @@ export default class MprisPlayerControlExtension extends Extension {
 
         this._playIcon = new St.Icon({
             icon_name: 'media-playback-start-symbolic',
-            style_class: 'control-panel-icon',
+            style_class: 'control-panel-icon system-status-icon',
         });
         this._playIcon.reactive = false;
         this._playIcon.add_style_pseudo_class('insensitive');
@@ -411,7 +413,7 @@ export default class MprisPlayerControlExtension extends Extension {
 
         this._pauseIcon = new St.Icon({
             icon_name: 'media-playback-pause-symbolic',
-            style_class: 'control-panel-icon',
+            style_class: 'control-panel-icon system-status-icon',
         });
         this._pauseIcon.reactive = false;
         this._pauseIcon.add_style_pseudo_class('insensitive');
@@ -419,7 +421,7 @@ export default class MprisPlayerControlExtension extends Extension {
 
         this._stopIcon = new St.Icon({
             icon_name: 'media-playback-stop-symbolic',
-            style_class: 'control-panel-icon',
+            style_class: 'control-panel-icon system-status-icon',
         });
         this._stopIcon.reactive = false;
         this._stopIcon.add_style_pseudo_class('insensitive');
@@ -427,7 +429,7 @@ export default class MprisPlayerControlExtension extends Extension {
 
         this._playerIcon = new St.Icon({
             fallback_icon_name: 'audio-x-generic-symbolic',
-            style_class: 'player-icon',
+            style_class: 'player-icon system-status-icon',
         });
         this._playerIcon.reactive = false;
         this._playerIcon.add_style_pseudo_class('insensitive');
@@ -441,11 +443,11 @@ export default class MprisPlayerControlExtension extends Extension {
         };
 
         this._trackLabel = new St.Label({
-            style_class: 'track-title',
+            style_class: 'message-title',
         });
         this._trackLabel.set_name('TrackLabel');
         this._trackLabel.reactive = false;
-        this._trackLabel.add_style_pseudo_class('insensitive');
+        this._trackLabel.add_style_pseudo_class('dimmed');
         this._trackLabel.clutter_text.y_align = Clutter.ActorAlign.CENTER;
         this._trackLabel.clutter_text.ellipsize = Pango.EllipsizeMode.END;
         this._indicatorBox.add_child(this._playerIcon);
