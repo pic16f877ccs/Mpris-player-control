@@ -62,10 +62,34 @@ export default class MprisPlayerControlExtension extends Extension {
         this._initMprisPlayer();
     }
 
+    _hasIndicatorBoxChild(boxChildName) {
+        return this._indicatorBox.get_children()
+            .find((child, index, children) => { return child.get_name() === boxChildName; });
+    }
+
+    _removeIndicatorBoxChildren(boxChild) {
+        const boxChildName = boxChild.get_name();
+
+        this._indicatorBox.get_children()
+            .map(child => { 
+                if(child.get_name() === boxChildName) {
+                    this._indicatorBox.remove_child(child);
+                }
+            });
+    }
+
+    _insertIfHasNotControlBoxChild(boxChild, index) {
+        if(!this._hasIndicatorBoxChild(boxChild.get_name())) {
+            this._indicatorBox.insert_child_at_index(boxChild, index);
+        }
+    }
+
     _updateIndicatorFlexibility() {
         const hasTitle = typeof this._currentTrackTitle === 'string' && this._currentTrackTitle.length > 0;
 
         if(IndicatorFlexibility.fixedMaximal === this._flexibility) {
+            this._insertIfHasNotControlBoxChild(this._trackLabel, 1);
+
             this._trackLabel.clutter_text.set_width(this._titleWidth);
             if(hasTitle) {
                 this._trackLabel.remove_style_pseudo_class('insensitive');
@@ -76,17 +100,16 @@ export default class MprisPlayerControlExtension extends Extension {
             }
         } else if(IndicatorFlexibility.adaptive === this._flexibility) {
             if(hasTitle) {
+                this._insertIfHasNotControlBoxChild(this._trackLabel, 1);
+
                 this._trackLabel.clutter_text.set_width(this._titleWidth);
                 this._trackLabel.remove_style_pseudo_class('insensitive');
                 this._trackLabel.set_text(this._currentTrackTitle);
             } else {
-                this._trackLabel.clutter_text.set_width(null);
-                this._trackLabel.add_style_pseudo_class('insensitive');
-                this._trackLabel.set_text('');
+                this._removeIndicatorBoxChildren(this._trackLabel);
             }
         } else if(IndicatorFlexibility.fixedMinimal === this._flexibility) {
-            this._trackLabel.clutter_text.set_width(null);
-            this._trackLabel.set_text('');
+             this._removeIndicatorBoxChildren(this._trackLabel);
         }
     }
 
@@ -360,6 +383,7 @@ export default class MprisPlayerControlExtension extends Extension {
         });
         this._controlBox.reactive = true;
         this._controlBox.set_style(spacing);
+        this._controlBox.set_name('ControlBox');
 
         this._forwardIcon = new St.Icon({
             icon_name: 'media-skip-forward-symbolic',
@@ -419,14 +443,14 @@ export default class MprisPlayerControlExtension extends Extension {
         this._trackLabel = new St.Label({
             style_class: 'track-title',
         });
+        this._trackLabel.set_name('TrackLabel');
         this._trackLabel.reactive = false;
         this._trackLabel.add_style_pseudo_class('insensitive');
         this._trackLabel.clutter_text.y_align = Clutter.ActorAlign.CENTER;
         this._trackLabel.clutter_text.ellipsize = Pango.EllipsizeMode.END;
-        this._updateIndicatorFlexibility();
         this._indicatorBox.add_child(this._playerIcon);
-        this._indicatorBox.add_child(this._trackLabel);
         this._indicatorBox.add_child(this._controlBox);
+        this._updateIndicatorFlexibility();
 
         this._indicator.add_child(this._indicatorBox);
         Main.panel.addToStatusArea(this.uuid, this._indicator);
@@ -738,14 +762,13 @@ export default class MprisPlayerControlExtension extends Extension {
             this._controlBox.replace_child(statusChild, icon);
         }
 
-        this._enablePlaybackIcons(this._getChildrenNames());
+        this._enablePlaybackIcons(this._getStatusChildName());
     }
 
     _stop(selectChild, layout) {
         const statusChild = this._getStatusChild(selectChild);
         this._disablePlaybackIcons(Object.keys(this._controlIconsHandlers));
         this._currentTrackTitle = null;
-        this._updateIndicatorFlexibility();
 
         if (statusChild.includes(this._stopIcon)) {
             if (statusChild.includes(this._pauseIcon)) {
@@ -763,6 +786,7 @@ export default class MprisPlayerControlExtension extends Extension {
             this._controlBox.replace_child(statusChild[0], this._stopIcon);
         }
 
+        this._updateIndicatorFlexibility();
         this._activatePlaybackIcons(layout);
     }
 
@@ -945,7 +969,7 @@ export default class MprisPlayerControlExtension extends Extension {
             .filter(child => { return selectChild.includes(child.get_name()); });
     }
 
-    _getChildrenNames() {
+    _getStatusChildName() {
         return this._controlBox.get_children().map(child => { 
             const name = child.get_name();
             if (name === 'Paused') {
