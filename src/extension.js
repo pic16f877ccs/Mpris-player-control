@@ -71,7 +71,7 @@ export default class MprisPlayerControlExtension extends Extension {
         const boxChildName = boxChild.get_name();
 
         this._indicatorBox.get_children()
-                .forEach(child => {
+            .forEach(child => {
                 if(child.get_name() === boxChildName) {
                     this._indicatorBox.remove_child(child);
                 }
