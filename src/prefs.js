@@ -175,18 +175,3 @@ export default class MprisPlayerControlPreferences extends ExtensionPreferences 
         controlsGroup.add(seekScrollSwitchRow);
     }
 }
-
-//window._settings.bind('set-title-width', titleWidthSpinRow, 'value',
-//    Gio.SettingsBindFlags.DEFAULT,
-//);
-//window._settings.connect('changed::set-title-width', (settings, key) => {
-//    GLib.timeout_add(GLib.PRIORITY_DEFAULT, 1500, () => {
-//        const current_title_width = window._settings.get_uint('set-title-width');
-//        const confirmed_title_width = window._settings.get_uint('get-title-width');
-//        if (current_title_width !== confirmed_title_width) {
-//            window._settings.set_uint('set-title-width', this._temp_title_width);
-//            titleWidthSpinRow.set_value(this._temp_title_width);
-//        }
-//    });
-//});
-

@@ -92,10 +92,10 @@ export const MprisPlayerProxy = Gio.DBusProxy.makeProxyWrapper(MPRIS_PLAYER_IFAC
 
 export const TRIPLE_CONTROL_KEYS = ['Stopped', 'Playing', 'Paused'];
 export const CONTROL_KEYS_LAYOUT = {
-    'minimal': ['Stopped'],
-    'basic': ['Stopped', 'Forward'],
-    'standard': ['Backward', 'Stopped', 'Forward'],
-    'full': ['Backward', 'Playing', 'Stopped', 'Forward'],
+    'Minimal': ['Stopped'],
+    'Basic': ['Stopped', 'Forward'],
+    'Standard': ['Backward', 'Stopped', 'Forward'],
+    'Full': ['Backward', 'Playing', 'Stopped', 'Forward'],
 };
 
 export const ALLOW_AMPLIFIED_VOLUME_KEY = 'allow-volume-above-100-percent';

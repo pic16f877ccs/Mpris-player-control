@@ -2,7 +2,7 @@
 <schemalist>
     <schema id="org.gnome.shell.extensions.mpris-player-control" path="/org/gnome/shell/extensions/mpris-player-control/">
         <key name="playback-icons-layout" type="s">
-            <default>"standard"</default>
+            <default>"Standard"</default>
             <summary>Layout style for playback icons</summary>
             <description>
                 Controls how the playback icons are arranged in the panel indicator.

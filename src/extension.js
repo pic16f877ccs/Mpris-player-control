@@ -1094,7 +1094,7 @@ export default class MprisPlayerControlExtension extends Extension {
         this._allowAmplified = this._soundSettings.get_boolean(ALLOW_AMPLIFIED_VOLUME_KEY);
 
         if (!Object.keys(CONTROL_KEYS_LAYOUT).includes(this._playbackIconLayout)) {
-            this._playbackIconLayout = 'standard';
+            this._playbackIconLayout = 'Standard';
             this._settings.set_string('playback-icons-layout', this._playbackIconLayout);
         }
 
