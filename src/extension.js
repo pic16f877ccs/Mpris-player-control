@@ -808,8 +808,24 @@ export default class MprisPlayerControlExtension extends Extension {
 
                 const direction = event.get_scroll_direction();
 
+                this._lastScrollTime ??= 0;
+                this._scrollMultiplier ??= 1;
+
+                const now = Date.now();
+
+                if (now - this._lastScrollTime < 200)
+                    this._scrollMultiplier = Math.min(this._scrollMultiplier + 1, 5);
+                else
+                    this._scrollMultiplier = 1;
+
+                this._lastScrollTime = now;
+
                 try {
-                    const offsetUS = this._mprisPlayerSeekOffset * 1_000_000;
+                    //const offsetUS = this._mprisPlayerSeekOffset * 1_000_000;
+                    const offsetUS =
+                        this._mprisPlayerSeekOffset *
+                        this._scrollMultiplier *
+                        1_000_000;
 
                     if (direction === Clutter.ScrollDirection.UP) {
                         await this._mprisPlayer.SeekAsync(offsetUS);
