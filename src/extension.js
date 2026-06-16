@@ -92,10 +92,10 @@ export default class MprisPlayerControlExtension extends Extension {
 
             this._trackLabel.clutter_text.set_width(this._titleWidth);
             if(hasTitle) {
-                this._trackLabel.remove_style_pseudo_class('dimmed');
+                this._trackLabel.remove_style_pseudo_class('insensitive');
                 this._trackLabel.set_text(this._currentTrackTitle);
             } else {
-                this._trackLabel.add_style_pseudo_class('dimmed');
+                this._trackLabel.add_style_pseudo_class('insensitive');
                 this._trackLabel.set_text(_('Unknown title'));
             }
         } else if(IndicatorFlexibility.adaptive === this._flexibility) {
@@ -103,7 +103,7 @@ export default class MprisPlayerControlExtension extends Extension {
                 this._insertIfHasNotControlBoxChild(this._trackLabel, 1);
 
                 this._trackLabel.clutter_text.set_width(this._titleWidth);
-                this._trackLabel.remove_style_pseudo_class('dimmed');
+                this._trackLabel.remove_style_pseudo_class('insensitive');
                 this._trackLabel.set_text(this._currentTrackTitle);
             } else {
                 this._removeIndicatorBoxChildren(this._trackLabel);
@@ -443,11 +443,11 @@ export default class MprisPlayerControlExtension extends Extension {
         };
 
         this._trackLabel = new St.Label({
-            style_class: 'message-title',
+            style_class: 'player-title',
         });
         this._trackLabel.set_name('TrackLabel');
         this._trackLabel.reactive = false;
-        this._trackLabel.add_style_pseudo_class('dimmed');
+        this._trackLabel.add_style_pseudo_class('insensitive');
         this._trackLabel.clutter_text.y_align = Clutter.ActorAlign.CENTER;
         this._trackLabel.clutter_text.ellipsize = Pango.EllipsizeMode.END;
         this._indicatorBox.add_child(this._playerIcon);
