@@ -374,7 +374,6 @@ export default class MprisPlayerControlExtension extends Extension {
             style_class: 'panel-button',
         });
         const spacing = `spacing: ${this._settings.get_uint('spacing')}px;`;
-        log('SSSSSSSSSSSSSSSS ' + this._indicatorBox.get_style_class_name());
         this._indicator.set_style(spacing);
         this._indicatorBox.set_style(spacing);
 
