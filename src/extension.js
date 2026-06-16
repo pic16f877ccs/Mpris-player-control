@@ -57,7 +57,7 @@ export default class MprisPlayerControlExtension extends Extension {
         this._volumeMixerControl = getMixerControl();
 
         this._initPlayerIndicator();
-        this._addPlaybackButtons(this._playbackIconLayout);
+        this._addPlaybackButtons(this._playbackButtonLayout);
         this._initSignalConnects();
         this._initMprisPlayer();
     }
@@ -1079,7 +1079,7 @@ export default class MprisPlayerControlExtension extends Extension {
     _initSettings() {
         this._settings = this.getSettings();
 
-        this._playbackIconLayout = this._settings.get_string('playback-icons-layout');
+        this._playbackButtonLayout = this._settings.get_string('playback-icons-layout');
         this._titleWidth = this._settings.get_uint('set-title-width');
         this._flexibility = this._settings.get_uint('indicator-flexibility');
         this._activePlayerName = this._settings.get_string('active-player-name');
@@ -1094,9 +1094,9 @@ export default class MprisPlayerControlExtension extends Extension {
         });
         this._allowAmplified = this._soundSettings.get_boolean(ALLOW_AMPLIFIED_VOLUME_KEY);
 
-        if (!Object.keys(CONTROL_KEYS_LAYOUT).includes(this._playbackIconLayout)) {
-            this._playbackIconLayout = 'Standard';
-            this._settings.set_string('playback-icons-layout', this._playbackIconLayout);
+        if (!Object.keys(CONTROL_KEYS_LAYOUT).includes(this._playbackButtonLayout)) {
+            this._playbackButtonLayout = 'Standard';
+            this._settings.set_string('playback-icons-layout', this._playbackButtonLayout);
         }
 
         if (!Object.values(IndicatorFlexibility).includes(this._flexibility)) {
@@ -1108,8 +1108,8 @@ export default class MprisPlayerControlExtension extends Extension {
     _initSignalConnects() {
         this._settings.connectObject(
             'changed::playback-icons-layout', (settings, key) => {
-                this._playbackIconLayout = settings.get_string(key);
-                this._updatePlaybackButtons(this._playbackIconLayout);
+                this._playbackButtonLayout = settings.get_string(key);
+                this._updatePlaybackButtons(this._playbackButtonLayout);
             },
             'changed::set-title-width', (settings, key) => {
                 this._titleWidth = settings.get_uint(key);
