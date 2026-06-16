@@ -264,7 +264,7 @@ export default class MprisPlayerControlExtension extends Extension {
             return;
         }
 
-        const currentUS = await this._position();
+        const currentUS = await this._getTrackPosition();
         const totalUS = this._trackLength;
 
         const label = buildLabel(
@@ -466,7 +466,7 @@ export default class MprisPlayerControlExtension extends Extension {
         try {
             await this._dbus();
 
-            this._mprisPlayerNames = await this._extractMprisPlayersNames();
+            this._mprisPlayerNames = await this._getMprisPlayersNames();
             await Promise.all(this._mprisPlayerNames.map(name => this._addPlayerName(name)));
 
             const auto = this._settings.get_boolean("auto-select");
@@ -485,7 +485,7 @@ export default class MprisPlayerControlExtension extends Extension {
         }
     }
 
-    async _position() {
+    async _getTrackPosition() {
         try {
             if (!this._dbusProxyProperties)
                 return 0;
@@ -526,7 +526,7 @@ export default class MprisPlayerControlExtension extends Extension {
         }
     }
 
-    async _extractMprisPlayersNames() {
+    async _getMprisPlayersNames() {
         try {
             const dbusNamesList = await this._dbusProxy.ListNamesAsync();
 
