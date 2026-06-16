@@ -44,7 +44,7 @@ export default class MprisPlayerControlExtension extends Extension {
         this._progressIndicatorWidthHandler = null;
         this._showProgressIndicatorHandler = null;
 
-        this._controlIconsHandlers = {
+        this._controlButtonsHandlers = {
             'Backward': null,
             'Paused': null,
             'Playing': null,
@@ -57,7 +57,7 @@ export default class MprisPlayerControlExtension extends Extension {
         this._volumeMixerControl = getMixerControl();
 
         this._initPlayerIndicator();
-        this._addPlaybackIcons(this._playbackIconLayout);
+        this._addPlaybackButtons(this._playbackIconLayout);
         this._initSignalConnects();
         this._initMprisPlayer();
     }
@@ -386,45 +386,45 @@ export default class MprisPlayerControlExtension extends Extension {
         this._controlBox.set_style(spacing);
         this._controlBox.set_name('ControlBox');
 
-        this._forwardIcon = new St.Icon({
+        this._forwardButton = new St.Icon({
             icon_name: 'media-skip-forward-symbolic',
             style_class: 'control-panel-icon system-status-icon',
         });
-        this._forwardIcon.reactive = false;
-        this._forwardIcon.add_style_pseudo_class('insensitive');
-        this._forwardIcon.set_name('Forward');
+        this._forwardButton.reactive = false;
+        this._forwardButton.add_style_pseudo_class('insensitive');
+        this._forwardButton.set_name('Forward');
 
-        this._backwardIcon = new St.Icon({
+        this._backwardButton = new St.Icon({
             icon_name: 'media-skip-backward-symbolic',
             style_class: 'control-panel-icon system-status-icon',
         });
-        this._backwardIcon.reactive = false;
-        this._backwardIcon.add_style_pseudo_class('insensitive');
-        this._backwardIcon.set_name('Backward');
+        this._backwardButton.reactive = false;
+        this._backwardButton.add_style_pseudo_class('insensitive');
+        this._backwardButton.set_name('Backward');
 
-        this._playIcon = new St.Icon({
+        this._playButton = new St.Icon({
             icon_name: 'media-playback-start-symbolic',
             style_class: 'control-panel-icon system-status-icon',
         });
-        this._playIcon.reactive = false;
-        this._playIcon.add_style_pseudo_class('insensitive');
-        this._playIcon.set_name('Paused');
+        this._playButton.reactive = false;
+        this._playButton.add_style_pseudo_class('insensitive');
+        this._playButton.set_name('Paused');
 
-        this._pauseIcon = new St.Icon({
+        this._pauseButton = new St.Icon({
             icon_name: 'media-playback-pause-symbolic',
             style_class: 'control-panel-icon system-status-icon',
         });
-        this._pauseIcon.reactive = false;
-        this._pauseIcon.add_style_pseudo_class('insensitive');
-        this._pauseIcon.set_name('Playing');
+        this._pauseButton.reactive = false;
+        this._pauseButton.add_style_pseudo_class('insensitive');
+        this._pauseButton.set_name('Playing');
 
-        this._stopIcon = new St.Icon({
+        this._stopButton = new St.Icon({
             icon_name: 'media-playback-stop-symbolic',
             style_class: 'control-panel-icon system-status-icon',
         });
-        this._stopIcon.reactive = false;
-        this._stopIcon.add_style_pseudo_class('insensitive');
-        this._stopIcon.set_name('Stopped');
+        this._stopButton.reactive = false;
+        this._stopButton.add_style_pseudo_class('insensitive');
+        this._stopButton.set_name('Stopped');
 
         this._playerIcon = new St.Icon({
             fallback_icon_name: 'audio-x-generic-symbolic',
@@ -433,12 +433,12 @@ export default class MprisPlayerControlExtension extends Extension {
         this._playerIcon.reactive = false;
         this._playerIcon.add_style_pseudo_class('insensitive');
 
-        this._controlIcons = {
-            'Backward': this._backwardIcon,
-            'Stopped': this._stopIcon,
-            'Paused': this._pauseIcon,
-            'Playing': this._playIcon,
-            'Forward': this._forwardIcon,
+        this._controlButtons = {
+            'Backward': this._backwardButton,
+            'Stopped': this._stopButton,
+            'Paused': this._pauseButton,
+            'Playing': this._playButton,
+            'Forward': this._forwardButton,
         };
 
         this._trackLabel = new St.Label({
@@ -589,7 +589,7 @@ export default class MprisPlayerControlExtension extends Extension {
             }
  
             this._updateTrackInfo(metadata);
-            this._statusIconManager(this._mprisPlayer.PlaybackStatus);
+            this._statusButtonManager(this._mprisPlayer.PlaybackStatus);
 
         } catch (e) {
             logError(e, `could not add proxy player ${this._mprisPlayerNames}`);
@@ -737,17 +737,17 @@ export default class MprisPlayerControlExtension extends Extension {
                 }
 
                 if (status) {
-                    this._statusIconManager(status);
+                    this._statusButtonManager(status);
                 }
             }
         );
     }
 
-    _statusIconManager(status) {
+    _statusButtonManager(status) {
         if (status === 'Paused') {
-            this._playingPaused(TRIPLE_CONTROL_KEYS, this._playIcon);
+            this._playingPaused(TRIPLE_CONTROL_KEYS, this._playButton);
         } else if (status === 'Playing') {
-            this._playingPaused(TRIPLE_CONTROL_KEYS, this._pauseIcon);
+            this._playingPaused(TRIPLE_CONTROL_KEYS, this._pauseButton);
         } else if (status === 'Stopped') {
             this._stop(TRIPLE_CONTROL_KEYS, ['Stopped', 'Playing']);
         } else {
@@ -763,40 +763,40 @@ export default class MprisPlayerControlExtension extends Extension {
             this._controlBox.replace_child(statusChild, icon);
         }
 
-        this._enablePlaybackIcons(this._getStatusChildName());
+        this._enablePlaybackButtons(this._getStatusChildName());
     }
 
     _stop(selectChild, layout) {
         const statusChild = this._getStatusChild(selectChild);
-        this._disablePlaybackIcons(Object.keys(this._controlIconsHandlers));
+        this._disablePlaybackIcons(Object.keys(this._controlButtonsHandlers));
         this._currentTrackTitle = null;
 
-        if (statusChild.includes(this._stopIcon)) {
-            if (statusChild.includes(this._pauseIcon)) {
-                this._controlBox.replace_child(this._pauseIcon, this._playIcon);
-                this._enablePlaybackIcons(layout);
+        if (statusChild.includes(this._stopButton)) {
+            if (statusChild.includes(this._pauseButton)) {
+                this._controlBox.replace_child(this._pauseButton, this._playButton);
+                this._enablePlaybackButtons(layout);
 
                 return;
-            } else if (statusChild.includes(this._playIcon)) {
-                this._enablePlaybackIcons(layout);
+            } else if (statusChild.includes(this._playButton)) {
+                this._enablePlaybackButtons(layout);
 
                 return;
             }
 
         } else {
-            this._controlBox.replace_child(statusChild[0], this._stopIcon);
+            this._controlBox.replace_child(statusChild[0], this._stopButton);
         }
 
         this._updateIndicatorFlexibility();
-        this._activatePlaybackIcons(layout);
+        this._activatePlaybackButtons(layout);
     }
 
-    _enablePlaybackIcons(layout) {
-        this._connectPlaybackIcons(layout);
+    _enablePlaybackButtons(layout) {
+        this._connectPlaybackButtons(layout);
         if (this._mprisPlayerSeek) {
             this._connectSeekControlBox(layout);
         }
-        this._activatePlaybackIcons(layout);
+        this._activatePlaybackButtons(layout);
     }
 
     _connectSeekControlBox() {
@@ -863,10 +863,10 @@ export default class MprisPlayerControlExtension extends Extension {
         }
     }
 
-    _connectPlaybackIcons(layout) {
+    _connectPlaybackButtons(layout) {
         if (layout.includes('Forward')) {
-            if (this._controlIconsHandlers['Forward'] === null) { 
-                this._controlIconsHandlers['Forward'] = this._forwardIcon.connect('button-press-event', async (actor, event) => {
+            if (this._controlButtonsHandlers['Forward'] === null) { 
+                this._controlButtonsHandlers['Forward'] = this._forwardButton.connect('button-press-event', async (actor, event) => {
                     const middleClickResult = await this._handleMiddleClickSeek(event);
                     if (middleClickResult === Clutter.EVENT_STOP) {
                         return Clutter.EVENT_STOP;
@@ -890,8 +890,8 @@ export default class MprisPlayerControlExtension extends Extension {
         }
 
         if (layout.includes('Backward')) {
-            if (this._controlIconsHandlers['Backward'] === null) { 
-                this._controlIconsHandlers['Backward'] = this._backwardIcon.connect('button-press-event', async (actor, event) => {
+            if (this._controlButtonsHandlers['Backward'] === null) { 
+                this._controlButtonsHandlers['Backward'] = this._backwardButton.connect('button-press-event', async (actor, event) => {
                     const middleClickResult = await this._handleMiddleClickSeek(event);
                     if (middleClickResult === Clutter.EVENT_STOP) {
                         return Clutter.EVENT_STOP;
@@ -915,8 +915,8 @@ export default class MprisPlayerControlExtension extends Extension {
         }
 
         if (layout.includes('Stopped')) {
-            if (this._controlIconsHandlers['Stopped'] === null) { 
-                this._controlIconsHandlers['Stopped'] = this._stopIcon.connect('button-press-event', async (actor, event) => {
+            if (this._controlButtonsHandlers['Stopped'] === null) { 
+                this._controlButtonsHandlers['Stopped'] = this._stopButton.connect('button-press-event', async (actor, event) => {
                     const middleClickResult = await this._handleMiddleClickSeek(event);
                     if (middleClickResult === Clutter.EVENT_STOP) {
                         return Clutter.EVENT_STOP;
@@ -940,8 +940,8 @@ export default class MprisPlayerControlExtension extends Extension {
         }
 
         if (layout.includes('Playing')) {
-            if (this._controlIconsHandlers['Playing'] === null) { 
-                this._controlIconsHandlers['Playing'] = this._playIcon.connect(
+            if (this._controlButtonsHandlers['Playing'] === null) { 
+                this._controlButtonsHandlers['Playing'] = this._playButton.connect(
                     'button-press-event',
                     this._playPause.bind(this),
                 );
@@ -949,8 +949,8 @@ export default class MprisPlayerControlExtension extends Extension {
         }
 
         if (layout.includes('Paused')) {
-            if (this._controlIconsHandlers['Paused'] === null) { 
-                this._controlIconsHandlers['Paused'] = this._pauseIcon.connect(
+            if (this._controlButtonsHandlers['Paused'] === null) { 
+                this._controlButtonsHandlers['Paused'] = this._pauseButton.connect(
                     'button-press-event',
                     this._playPause.bind(this),
                 );
@@ -958,10 +958,10 @@ export default class MprisPlayerControlExtension extends Extension {
         }
     }
 
-    _activatePlaybackIcons(layout) {
+    _activatePlaybackButtons(layout) {
         layout.forEach((key) => {
-            this._controlIcons[key].set_reactive(true);
-            this._controlIcons[key].remove_style_pseudo_class('insensitive');
+            this._controlButtons[key].set_reactive(true);
+            this._controlButtons[key].remove_style_pseudo_class('insensitive');
         });
     }
 
@@ -1003,39 +1003,39 @@ export default class MprisPlayerControlExtension extends Extension {
         this._playerIcon.add_style_pseudo_class('insensitive');
     }
 
-    _addPlaybackIcons(keyLayout) {
+    _addPlaybackButtons(keyLayout) {
         for (const status of CONTROL_KEYS_LAYOUT[keyLayout]) {
-            this._controlBox.add_child(this._controlIcons[status]);
+            this._controlBox.add_child(this._controlButtons[status]);
         }
     }
 
-    _updatePlaybackIcons(keyLayout) {
+    _updatePlaybackButtons(keyLayout) {
         this._controlBox.get_children().forEach((child) => {
             const key = child.get_name();
 
-            if (this._controlIconsHandlers[key] !== null) { 
-                child.disconnect(this._controlIconsHandlers[key]);
-                this._controlIconsHandlers[key] = null;
+            if (this._controlButtonsHandlers[key] !== null) { 
+                child.disconnect(this._controlButtonsHandlers[key]);
+                this._controlButtonsHandlers[key] = null;
             }
         });
 
         this._controlBox.remove_all_children();
-        this._addPlaybackIcons(keyLayout);
+        this._addPlaybackButtons(keyLayout);
 
         if (this._mprisPlayer) {
-            this._statusIconManager(this._mprisPlayer.PlaybackStatus);
+            this._statusButtonManager(this._mprisPlayer.PlaybackStatus);
         }
     }
 
     _disablePlaybackIcons(layout) {
-        this._deactivatePlaybackIcons(layout.slice(0, 5));
-        this._disconnectPlaybackIcons(layout);
+        this._deactivatePlaybackButtons(layout.slice(0, 5));
+        this._disconnectPlaybackButtons(layout);
     }
 
-    _deactivatePlaybackIcons(layout) {
+    _deactivatePlaybackButtons(layout) {
         layout.forEach((key) => {
-            this._controlIcons[key].set_reactive(false);
-            this._controlIcons[key].add_style_pseudo_class('insensitive');
+            this._controlButtons[key].set_reactive(false);
+            this._controlButtons[key].add_style_pseudo_class('insensitive');
         });
     }
 
@@ -1046,11 +1046,11 @@ export default class MprisPlayerControlExtension extends Extension {
         }
     }
 
-    _disconnectPlaybackIcons(layout) {
+    _disconnectPlaybackButtons(layout) {
         layout.forEach((key) => {
-            if (this._controlIconsHandlers[key] !== null) { 
-                this._controlIcons[key].disconnect(this._controlIconsHandlers[key]);
-                this._controlIconsHandlers[key] = null;
+            if (this._controlButtonsHandlers[key] !== null) { 
+                this._controlButtons[key].disconnect(this._controlButtonsHandlers[key]);
+                this._controlButtonsHandlers[key] = null;
             }
         });
     }
@@ -1109,7 +1109,7 @@ export default class MprisPlayerControlExtension extends Extension {
         this._settings.connectObject(
             'changed::playback-icons-layout', (settings, key) => {
                 this._playbackIconLayout = settings.get_string(key);
-                this._updatePlaybackIcons(this._playbackIconLayout);
+                this._updatePlaybackButtons(this._playbackIconLayout);
             },
             'changed::set-title-width', (settings, key) => {
                 this._titleWidth = settings.get_uint(key);
@@ -1166,7 +1166,7 @@ export default class MprisPlayerControlExtension extends Extension {
         }
 
         this._disconnectVolumeControl();
-        this._disconnectPlaybackIcons(Object.keys(this._controlIconsHandlers));
+        this._disconnectPlaybackButtons(Object.keys(this._controlButtonsHandlers));
         this._disconnectSeekControlBox();
         this._disconnectPlayerProperties();
 
