@@ -14,6 +14,7 @@
 
 import Clutter from 'gi://Clutter';
 import GLib from 'gi://GLib';
+import Pango from "gi://Pango";
 import GObject from 'gi://GObject';
 import St from 'gi://St';
 
@@ -28,7 +29,7 @@ export const ProgressBarLevel = BarLevel.BarLevel;
 
 export const OsdProgressWindow = GObject.registerClass(
 class OsdProgressWindow extends Clutter.Actor {
-    _init(monitorIndex) {
+    _init(monitorIndex, osdWindowWidth) {
         super._init({
             x_expand: true,
             y_expand: true,
@@ -36,6 +37,7 @@ class OsdProgressWindow extends Clutter.Actor {
             y_align: Clutter.ActorAlign.END,
         });
 
+        this._osdWindowWidth = osdWindowWidth;
         this._monitorIndex = monitorIndex;
         const constraint = new Layout.MonitorConstraint({index: monitorIndex});
         this.add_constraint(constraint);
@@ -46,19 +48,27 @@ class OsdProgressWindow extends Clutter.Actor {
         this.add_child(this._hbox);
 
         this._vbox = new St.BoxLayout({
-            orientation: Clutter.Orientation.VERTICAL,
-            y_align: Clutter.ActorAlign.CENTER,
+            x_expand: true,
+            y_expand: true,
+            orientation: Clutter.Orientation.HORIZONTAL,
+            x_align: Clutter.ActorAlign.CENTER,
         });
         this._hbox.add_child(this._vbox);
 
-        this._label = new St.Label();
-        this._vbox.add_child(this._label);
+        this._leftLabel = new St.Label();
+        this._rightLabel = new St.Label();
+        this._rightLabelWidth = this._rightLabel.get_width();
 
         this._level = new ProgressBarLevel({
             style_class: 'level',
             value: 0,
         });
+        this._level.set_width(this._osdWindowWidth);
+        this._level.set_style('margin-bottom: 0px;');
+
+        this._vbox.add_child(this._leftLabel);
         this._vbox.add_child(this._level);
+        this._vbox.add_child(this._rightLabel);
 
         this._hideTimeoutId = 0;
         this._reset();
@@ -68,13 +78,29 @@ class OsdProgressWindow extends Clutter.Actor {
 
     _updateBoxVisibility() {
         this._vbox.visible = [...this._vbox].some(child => child.visible);
+        this._vbox.queue_redraw();
+        log('%%%%%%%%%%%%%% hbox width: ' + this._hbox.get_width());
+        log('%%%%%%%%%%%%%% vbox width: ' + this._vbox.get_width());
+        log('%%%%%%%%%%%%%% left label width: ' + this._leftLabel.get_width());
+        log('%%%%%%%%%%%%%% right label width: ' + this._rightLabel.get_width());
     }
 
-    setLabel(label) {
-        this._label.visible = label != null;
-        if (this._label.visible)
-            this._label.text = label;
+    setLeftLabel(label) {
+        this._leftLabel.visible = label != null;
+        if (this._leftLabel.visible)
+            this._leftLabel.text = label;
         this._updateBoxVisibility();
+    }
+
+    setRightLabel(label) {
+        this._rightLabel.visible = label != null;
+        if (this._rightLabel.visible)
+            this._rightLabel.text = label;
+        this._updateBoxVisibility();
+        if(this._rightLabelWidth != this._rightLabel.get_width()) {
+            this._rightLabelWidth = this._rightLabel.get_width();
+            this._leftLabel.set_width(this._rightLabelWidth);
+        }
     }
 
     setLevel(value) {
@@ -144,7 +170,8 @@ class OsdProgressWindow extends Clutter.Actor {
 
     _reset() {
         super.hide();
-        this.setLabel(null);
+        this.setLeftLabel(null);
+        this.setRightLabel(null);
         this.setMaxLevel(1);
         this.setLevel(null);
     }

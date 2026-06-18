@@ -53,7 +53,7 @@ export default class MprisPlayerControlExtension extends Extension {
         };
 
         const monitorIndex = global.display.get_current_monitor();
-        this._osdWindow = new OsdProgressWindow(monitorIndex);
+        this._osdWindow = new OsdProgressWindow(monitorIndex, this._settings.get_uint('progress-indicator-width'));
         this._volumeMixerControl = getMixerControl();
 
         this._initPlayerIndicator();
@@ -248,12 +248,13 @@ export default class MprisPlayerControlExtension extends Extension {
             Main.osdWindowManager._showOsdWindow(i, icon, label, level, maxLevel);
     }
 
-    _showTrackProgressOsd(label, positionUS, totalUS) {
+    _showTrackProgressOsd(prefix, suffix, positionUS, totalUS) {
         const progress = totalUS > 0
             ? Math.clamp(positionUS / totalUS, 0, 1)
             : 0;
 
-        this._osdWindow.setLabel(label);
+        this._osdWindow.setLeftLabel(prefix);
+        this._osdWindow.setRightLabel(suffix);
         this._osdWindow.setMaxLevel(1);
         this._osdWindow.setLevel(progress);
         this._osdWindow.show();
@@ -263,17 +264,15 @@ export default class MprisPlayerControlExtension extends Extension {
         if (!this._showProgressIndicator) {
             return;
         }
-
         const currentUS = await this._getTrackPosition();
         const totalUS = this._trackLength;
+        const current = totalUS > 0 ? formatTimeUS(currentUS) : '--:--';
+        const total = totalUS > 0 ? formatTimeUS(totalUS) : '--:--';
 
-        const label = buildLabel(
-            totalUS > 0 ? formatTimeUS(currentUS) : '--:--',
-            totalUS > 0 ? formatTimeUS(totalUS) : '--:--',
-            this._progressIndicatorWidth,
-        );
-        
-        this._showTrackProgressOsd(label, currentUS, totalUS);
+        const prefix = `${current} ◔`;
+        const suffix = `◕ ${total}`;
+        this._showTrackProgressOsd(prefix, suffix, currentUS, totalUS);
+        //this._showTrackProgressOsd(current, total, currentUS, totalUS);
     }
 
     _selectPlayer(index) {
@@ -1102,7 +1101,6 @@ export default class MprisPlayerControlExtension extends Extension {
         this._mprisPlayerSeekOffset = this._settings.get_uint('seek-offset');
         this._mprisPlayerSeek = this._settings.get_boolean('enable-seek');
         this._preferredVolume = this._settings.get_uint('preferred-volume');
-        this._progressIndicatorWidth = this._settings.get_uint('progress-indicator-width');
         this._showProgressIndicator = this._settings.get_boolean('show-progress-indicator');
 
         this._soundSettings = new Gio.Settings({
@@ -1151,7 +1149,7 @@ export default class MprisPlayerControlExtension extends Extension {
                 this._preferredVolume = settings.get_uint(key);
             },
             'changed::progress-indicator-width', (settings, key) => {
-                this._progressIndicatorWidth = settings.get_uint(key);
+                this._osdWindow._level.set_width(settings.get_uint(key)); 
             },
             'changed::show-progress-indicator', (settings, key) => {
                 this._showProgressIndicator = settings.get_boolean(key);
@@ -1204,20 +1202,6 @@ function formatTimeUS(us) {
     return hours
         ? `${hours}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
         : `${minutes}:${String(seconds).padStart(2, '0')}`;
-}
-
-function buildLabel(current, total, totalWidth = 32) {
-    const clampedWidth = Math.clamp(8, totalWidth, 80);
-
-    const prefix = `${current}\u2005◔`;
-    const suffix = `◕\u2005${total}`;
-
-    const fillLength = Math.max(
-        1,
-        clampedWidth - prefix.length - suffix.length
-    );
-
-    return `${prefix}${'━'.repeat(fillLength)}${suffix}`;
 }
 
 function getVolumeIconIndex(stream, maxVolume) {

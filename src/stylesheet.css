@@ -29,3 +29,22 @@
     color: rgba(255, 255, 255, 0.5);
     font-style: italic;
 }
+
+.progress-level {
+    margin-bottom: 4px; 
+    min-width: 160px;
+    -barlevel-height: 6px; 
+    -barlevel-background-color: rgba(255, 255, 255, 0.1);
+    -barlevel-active-background-color: #ffffff;
+    -barlevel-overdrive-color: #c01c28;
+    -barlevel-overdrive-separator-width: 3px;
+}
+.progress-level:first-child {
+      margin-bottom: 0;
+} 
+.progress-level:ltr {
+      margin-right: 6px;
+ }
+.progress-level:rtl {
+      margin-left: 6px;
+}

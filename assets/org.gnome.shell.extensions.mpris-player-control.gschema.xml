@@ -48,10 +48,10 @@
             </description>
         </key>
         <key name="progress-indicator-width" type="u">
-            <default>32</default>
+            <default>160</default>
             <summary>Progress indicator width</summary>
             <description>
-                Sets the width of the seek progress label in characters.
+                Sets the width of the seek progress level in pixel.
             </description>
         </key>
         <key name="show-progress-indicator" type="b">
