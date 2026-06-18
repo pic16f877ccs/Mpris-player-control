@@ -14,7 +14,6 @@
 
 import Clutter from 'gi://Clutter';
 import GLib from 'gi://GLib';
-import Pango from "gi://Pango";
 import GObject from 'gi://GObject';
 import St from 'gi://St';
 
@@ -78,11 +77,9 @@ class OsdProgressWindow extends Clutter.Actor {
 
     _updateBoxVisibility() {
         this._vbox.visible = [...this._vbox].some(child => child.visible);
-        this._vbox.queue_redraw();
-        log('%%%%%%%%%%%%%% hbox width: ' + this._hbox.get_width());
-        log('%%%%%%%%%%%%%% vbox width: ' + this._vbox.get_width());
-        log('%%%%%%%%%%%%%% left label width: ' + this._leftLabel.get_width());
-        log('%%%%%%%%%%%%%% right label width: ' + this._rightLabel.get_width());
+
+        this._vbox.queue_relayout();
+        this._hbox.queue_relayout();
     }
 
     setLeftLabel(label) {
@@ -96,11 +93,13 @@ class OsdProgressWindow extends Clutter.Actor {
         this._rightLabel.visible = label != null;
         if (this._rightLabel.visible)
             this._rightLabel.text = label;
-        this._updateBoxVisibility();
-        if(this._rightLabelWidth != this._rightLabel.get_width()) {
+
+        if (this._rightLabelWidth !== this._rightLabel.get_width()) {
             this._rightLabelWidth = this._rightLabel.get_width();
             this._leftLabel.set_width(this._rightLabelWidth);
         }
+
+        this._updateBoxVisibility();
     }
 
     setLevel(value) {

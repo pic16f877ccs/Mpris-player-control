@@ -35,23 +35,23 @@
         </key>
         <key name="enable-seek" type="b">
             <default>true</default>
-            <summary>Enable scroll‑to‑seek</summary>
+            <summary>Enable scroll-to-seek</summary>
             <description>
-                Allows seeking forward or backward in the current track using the mouse scroll wheel over the forward icon.
+                Allows seeking forward or backward in the current track using the mouse scroll wheel over the playback controls.
             </description>
         </key>
         <key name="seek-offset" type="u">
             <default>5</default>
-            <summary>The number of seconds to seek forward.</summary>
+            <summary>Seek offset</summary>
             <description>
-                Specified number of seconds by the seeks forward in the current track .
+                Sets the number of seconds to skip when seeking with the scroll action.
             </description>
         </key>
         <key name="progress-indicator-width" type="u">
             <default>160</default>
             <summary>Progress indicator width</summary>
             <description>
-                Sets the width of the seek progress level in pixel.
+                Sets the width of the seek progress indicator in pixels.
             </description>
         </key>
         <key name="show-progress-indicator" type="b">

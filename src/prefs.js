@@ -131,8 +131,8 @@ export default class MprisPlayerControlPreferences extends ExtensionPreferences 
         const seekOffsetSpinRow = Adw.SpinRow.new_with_range(1, 20, 1);
         seekOffsetSpinRow.set_value(window._settings.get_uint('seek-offset'));
         seekOffsetSpinRow.set_wrap(true);
-        seekOffsetSpinRow.set_title(_('Sets seek offset'));
-        seekOffsetSpinRow.set_subtitle(_('Set seek offset in seconds.'));
+        seekOffsetSpinRow.set_title(_('Seek offset'));
+        seekOffsetSpinRow.set_subtitle(_('Set the seek step in seconds.'));
 
         window._settings.bind('seek-offset', seekOffsetSpinRow, 'value',
             Gio.SettingsBindFlags.DEFAULT,
@@ -152,7 +152,7 @@ export default class MprisPlayerControlPreferences extends ExtensionPreferences 
         progressIndicatorWidthSpinRow.set_value(window._settings.get_uint('progress-indicator-width'));
         progressIndicatorWidthSpinRow.set_wrap(true);
         progressIndicatorWidthSpinRow.set_title(_('Progress indicator width'));
-        progressIndicatorWidthSpinRow.set_subtitle(_('Set progress label width in characters.'));
+        progressIndicatorWidthSpinRow.set_subtitle(_('Set progress indicator width in pixels.'));
 
         window._settings.bind('progress-indicator-width', progressIndicatorWidthSpinRow, 'value',
             Gio.SettingsBindFlags.DEFAULT,
