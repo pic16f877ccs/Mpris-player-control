@@ -16,9 +16,17 @@ export default class MprisPlayerControlPreferences extends ExtensionPreferences 
         window._settings = this.getSettings();
         window._settings.set_uint('get-title-width', 0);
 
-        const appearanceGroup = new Adw.PreferencesGroup({ title: _('Appearance')});
-        appearanceGroup.set_separate_rows?.(true);
-        page.add(appearanceGroup);
+        const visualGroup = new Adw.PreferencesGroup({ title: _('Visual settings')});
+        visualGroup.set_separate_rows?.(true);
+        page.add(visualGroup);
+
+        const volumeGroup = new Adw.PreferencesGroup({ title: _('Volume settings')});
+        volumeGroup.set_separate_rows?.(true);
+        page.add(volumeGroup);
+
+        const featureGroup = new Adw.PreferencesGroup({ title: _('Feature settings')});
+        featureGroup.set_separate_rows?.(true);
+        page.add(featureGroup);
 
         const spacingSpinRow = Adw.SpinRow.new_with_range(0, 10, 1);
         spacingSpinRow.set_value(window._settings.get_uint('spacing'));
@@ -97,13 +105,9 @@ export default class MprisPlayerControlPreferences extends ExtensionPreferences 
 
         window._settings.connect('changed::indicator-flexibility', updateTitleWidthSensitivity);
 
-        appearanceGroup.add(spacingSpinRow);
-        appearanceGroup.add(titleWidthSpinRow);
-        appearanceGroup.add(flexibilityComboRow);
-        
-        const controlsGroup = new Adw.PreferencesGroup({ title: _('Controls')});
-        controlsGroup.set_separate_rows?.(true);
-        page.add(controlsGroup);
+        visualGroup.add(spacingSpinRow);
+        visualGroup.add(titleWidthSpinRow);
+        visualGroup.add(flexibilityComboRow);
 
         const controlKeysLayout = Object.keys(CONTROL_KEYS_LAYOUT);
         const controlKeysLayoutList = Gtk.StringList.new(controlKeysLayout);
@@ -187,13 +191,15 @@ export default class MprisPlayerControlPreferences extends ExtensionPreferences 
             Gio.SettingsBindFlags.DEFAULT,
         );
 
-        controlsGroup.add(seekOffsetSpinRow);
-        controlsGroup.add(preferredVolumeSpinRow);
-        controlsGroup.add(preferredVolumeTransitionDurationSpinRow);
-        controlsGroup.add(preferredVolumeTransitionRateSpinRow);
-        controlsGroup.add(progressIndicatorWidthSpinRow);
-        controlsGroup.add(showProgressIndicatorSwitchRow);
-        controlsGroup.add(keysLayoutComboRow);
-        controlsGroup.add(seekScrollSwitchRow);
+        visualGroup.add(progressIndicatorWidthSpinRow);
+        visualGroup.add(keysLayoutComboRow);
+
+        volumeGroup.add(preferredVolumeSpinRow);
+        volumeGroup.add(preferredVolumeTransitionDurationSpinRow);
+        volumeGroup.add(preferredVolumeTransitionRateSpinRow);
+
+        featureGroup.add(seekScrollSwitchRow);
+        featureGroup.add(seekOffsetSpinRow);
+        featureGroup.add(showProgressIndicatorSwitchRow);
     }
 }
