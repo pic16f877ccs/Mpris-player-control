@@ -112,6 +112,8 @@ export default class MprisPlayerControlExtension extends Extension {
         } else if(IndicatorFlexibility.fixedMinimal === this._flexibility) {
              this._removeIndicatorBoxChildren(this._trackLabel);
         }
+
+        this._controlBox.queue_relayout();
     }
 
     _connectVolumeControl() {
