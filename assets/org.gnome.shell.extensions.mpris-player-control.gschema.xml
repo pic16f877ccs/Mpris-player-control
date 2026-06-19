@@ -68,6 +68,20 @@
                 Stores the preferred volume level as a percentage. Middle-clicking the track label applies this saved value.
             </description>
         </key>
+        <key name="preferred-volume-transition-duration-scale" type="u">
+            <default>100</default>
+            <summary>Preferred volume transition duration</summary>
+            <description>
+                Scales the stepped transition duration for preferred volume changes. Base steps are 500, 1000, and 1500 milliseconds.
+            </description>
+        </key>
+        <key name="preferred-volume-transition-rate" type="u">
+            <default>8</default>
+            <summary>Preferred volume transition rate</summary>
+            <description>
+                Controls logarithmic acceleration while transitioning to the preferred volume. Higher values accelerate more strongly near the end.
+            </description>
+        </key>
         <key name="list-player-names" type="a{ss}">
             <default>{"": ""}</default>
         </key>

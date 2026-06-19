@@ -148,6 +148,26 @@ export default class MprisPlayerControlPreferences extends ExtensionPreferences 
             Gio.SettingsBindFlags.DEFAULT,
         );
 
+        const preferredVolumeTransitionDurationSpinRow = Adw.SpinRow.new_with_range(50, 200, 10);
+        preferredVolumeTransitionDurationSpinRow.set_value(window._settings.get_uint('preferred-volume-transition-duration-scale'));
+        preferredVolumeTransitionDurationSpinRow.set_wrap(true);
+        preferredVolumeTransitionDurationSpinRow.set_title(_('Preferred volume transition duration'));
+        preferredVolumeTransitionDurationSpinRow.set_subtitle(_('Scale stepped duration (500/1000/1500 ms). 100% keeps default timing.'));
+
+        window._settings.bind('preferred-volume-transition-duration-scale', preferredVolumeTransitionDurationSpinRow, 'value',
+            Gio.SettingsBindFlags.DEFAULT,
+        );
+
+        const preferredVolumeTransitionRateSpinRow = Adw.SpinRow.new_with_range(2, 30, 1);
+        preferredVolumeTransitionRateSpinRow.set_value(window._settings.get_uint('preferred-volume-transition-rate'));
+        preferredVolumeTransitionRateSpinRow.set_wrap(true);
+        preferredVolumeTransitionRateSpinRow.set_title(_('Preferred volume transition rate'));
+        preferredVolumeTransitionRateSpinRow.set_subtitle(_('Controls logarithmic acceleration. Higher values ramp faster near the end.'));
+
+        window._settings.bind('preferred-volume-transition-rate', preferredVolumeTransitionRateSpinRow, 'value',
+            Gio.SettingsBindFlags.DEFAULT,
+        );
+
         const progressIndicatorWidthSpinRow = Adw.SpinRow.new_with_range(160, 260, 1);
         progressIndicatorWidthSpinRow.set_value(window._settings.get_uint('progress-indicator-width'));
         progressIndicatorWidthSpinRow.set_wrap(true);
@@ -169,6 +189,8 @@ export default class MprisPlayerControlPreferences extends ExtensionPreferences 
 
         controlsGroup.add(seekOffsetSpinRow);
         controlsGroup.add(preferredVolumeSpinRow);
+        controlsGroup.add(preferredVolumeTransitionDurationSpinRow);
+        controlsGroup.add(preferredVolumeTransitionRateSpinRow);
         controlsGroup.add(progressIndicatorWidthSpinRow);
         controlsGroup.add(showProgressIndicatorSwitchRow);
         controlsGroup.add(keysLayoutComboRow);

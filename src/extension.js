@@ -43,6 +43,7 @@ export default class MprisPlayerControlExtension extends Extension {
         this._soundSettingsHandler = null;
         this._progressIndicatorWidthHandler = null;
         this._showProgressIndicatorHandler = null;
+        this._preferredVolumeTransitionId = 0;
 
         this._controlButtonsHandlers = {
             'Backward': null,
@@ -158,6 +159,8 @@ export default class MprisPlayerControlExtension extends Extension {
     }
 
     _adjustStreamVolume(increment) {
+        this._stopPreferredVolumeTransition();
+
         const stream = this._getActiveStream();
         if (!stream) {
             return;
@@ -177,6 +180,10 @@ export default class MprisPlayerControlExtension extends Extension {
     }
 
     _applyPreferredVolume() {
+        if (this._preferredVolumeTransitionId) {
+            return;
+        }
+
         const stream = this._getActiveStream();
         if (!stream) {
             return;
@@ -188,11 +195,93 @@ export default class MprisPlayerControlExtension extends Extension {
             ? Math.clamp(this._preferredVolume, 0, 150)
             : Math.clamp(this._preferredVolume, 0, 100);
 
-        const newVolume = Math.round((preferredPercent / 100) * this._volumeMixerControl.get_vol_max_norm());
-        stream.volume = Math.clamp(newVolume, 0, maxVolume);
-        stream.push_volume();
+        const preferredVolume = Math.round((preferredPercent / 100) * this._volumeMixerControl.get_vol_max_norm());
+        const targetVolume = Math.clamp(preferredVolume, 0, maxVolume);
 
-        this._showVolumeOsd(stream, activePlayerName, maxVolume);
+        if (Math.abs(stream.volume - targetVolume) <= 0) {
+            return;
+        }
+
+        this._startPreferredVolumeTransition(stream, targetVolume, activePlayerName, maxVolume);
+    }
+
+    _startPreferredVolumeTransition(stream, targetVolume, activePlayerName, maxVolume) {
+        const startVolume = stream.volume;
+        const durationMs = this._getPreferredVolumeTransitionDurationMs(startVolume, targetVolume, maxVolume);
+        const startTimeMs = GLib.get_monotonic_time() / 1000;
+        const intervalMs = 25;
+
+        this._preferredVolumeTransitionId = GLib.timeout_add(
+            GLib.PRIORITY_DEFAULT,
+            intervalMs,
+            () => {
+                const elapsedMs = (GLib.get_monotonic_time() / 1000) - startTimeMs;
+                const linearProgress = Math.clamp(elapsedMs / durationMs, 0, 1);
+                const easedProgress = this._computeLogEaseInProgress(linearProgress);
+                const nextVolume = Math.round(startVolume + (targetVolume - startVolume) * easedProgress);
+
+                try {
+                    stream.volume = Math.clamp(nextVolume, 0, maxVolume);
+                    stream.push_volume();
+                } catch (e) {
+                    logError(e, 'Preferred volume transition failed');
+                    this._stopPreferredVolumeTransition();
+                    return GLib.SOURCE_REMOVE;
+                }
+
+                this._showVolumeOsd(stream, activePlayerName, maxVolume);
+
+                if (linearProgress >= 1 || stream.volume === targetVolume) {
+                    stream.volume = targetVolume;
+                    stream.push_volume();
+                    this._showVolumeOsd(stream, activePlayerName, maxVolume);
+                    this._stopPreferredVolumeTransition();
+                    return GLib.SOURCE_REMOVE;
+                }
+
+                return GLib.SOURCE_CONTINUE;
+            }
+        );
+
+        GLib.Source.set_name_by_id(
+            this._preferredVolumeTransitionId,
+            '[mpris-player-control] preferred volume transition'
+        );
+    }
+
+    _getPreferredVolumeTransitionDurationMs(startVolume, targetVolume, maxVolume) {
+        const diffRatio = Math.abs(targetVolume - startVolume) / Math.max(maxVolume, 1);
+        const baseDurationMs = diffRatio <= 0.2
+            ? 500
+            : diffRatio <= 0.5
+                ? 1000
+                : 1500;
+
+        const durationScale = Math.clamp(this._preferredVolumeTransitionDurationScale, 50, 200) / 100;
+        return Math.round(baseDurationMs * durationScale);
+    }
+
+    _computeLogEaseInProgress(progress) {
+        if (progress <= 0)
+            return 0;
+        if (progress >= 1)
+            return 1;
+
+        const rate = Math.clamp(this._preferredVolumeTransitionRate, 2, 30);
+        const logBase = Math.log(rate);
+
+        if (logBase === 0)
+            return progress;
+
+        return 1 - (Math.log(1 + (rate - 1) * (1 - progress)) / logBase);
+    }
+
+    _stopPreferredVolumeTransition() {
+        if (!this._preferredVolumeTransitionId)
+            return;
+
+        GLib.source_remove(this._preferredVolumeTransitionId);
+        this._preferredVolumeTransitionId = 0;
     }
 
     _getActivePlayerIdentity() {
@@ -999,6 +1088,8 @@ export default class MprisPlayerControlExtension extends Extension {
     }
 
     _removePlayerProxy(mprisPlayerName) {
+        this._stopPreferredVolumeTransition();
+
         if (!mprisPlayerName) {
             this._stop(TRIPLE_CONTROL_KEYS, []);
         }
@@ -1101,6 +1192,8 @@ export default class MprisPlayerControlExtension extends Extension {
         this._mprisPlayerSeekOffset = this._settings.get_uint('seek-offset');
         this._mprisPlayerSeek = this._settings.get_boolean('enable-seek');
         this._preferredVolume = this._settings.get_uint('preferred-volume');
+        this._preferredVolumeTransitionRate = this._settings.get_uint('preferred-volume-transition-rate');
+        this._preferredVolumeTransitionDurationScale = this._settings.get_uint('preferred-volume-transition-duration-scale');
         this._showProgressIndicator = this._settings.get_boolean('show-progress-indicator');
 
         this._soundSettings = new Gio.Settings({
@@ -1148,6 +1241,12 @@ export default class MprisPlayerControlExtension extends Extension {
             'changed::preferred-volume', (settings, key) => {
                 this._preferredVolume = settings.get_uint(key);
             },
+            'changed::preferred-volume-transition-rate', (settings, key) => {
+                this._preferredVolumeTransitionRate = settings.get_uint(key);
+            },
+            'changed::preferred-volume-transition-duration-scale', (settings, key) => {
+                this._preferredVolumeTransitionDurationScale = settings.get_uint(key);
+            },
             'changed::progress-indicator-width', (settings, key) => {
                 this._osdWindow._level.set_width(settings.get_uint(key)); 
             },
@@ -1168,6 +1267,8 @@ export default class MprisPlayerControlExtension extends Extension {
     }
 
     disable() {
+        this._stopPreferredVolumeTransition();
+
         this._settings?.disconnectObject(this);
         this._settings = null;
 
