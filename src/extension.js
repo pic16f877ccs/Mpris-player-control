@@ -363,7 +363,6 @@ export default class MprisPlayerControlExtension extends Extension {
         const prefix = `${current} ◔`;
         const suffix = `◕ ${total}`;
         this._showTrackProgressOsd(prefix, suffix, currentUS, totalUS);
-        //this._showTrackProgressOsd(current, total, currentUS, totalUS);
     }
 
     _selectPlayer(index) {
@@ -536,9 +535,9 @@ export default class MprisPlayerControlExtension extends Extension {
         });
         this._trackLabel.set_name('TrackLabel');
         this._trackLabel.reactive = false;
-        //this._trackLabel.add_style_pseudo_class('insensitive');
         this._trackLabel.clutter_text.y_align = Clutter.ActorAlign.CENTER;
         this._trackLabel.clutter_text.ellipsize = Pango.EllipsizeMode.END;
+
         this._indicatorBox.add_child(this._playerIcon);
         this._indicatorBox.add_child(this._controlBox);
         this._updateIndicatorFlexibility();
@@ -772,14 +771,12 @@ export default class MprisPlayerControlExtension extends Extension {
                 }
 
                 this._mprisPlayerNames.splice(index, 1);
-                console.log(`*****< Remove invalidate Player name: ${name} >*****`);
                 delete this._listPlayerNames[name];
 
                 if (this._mprisPlayer?.get_name_owner() === oldOwner) {
                     this._removePlayerProxy(null);
                     
                     if (this._settings.get_boolean("auto-select")) {
-                        console.log(`*****< Add other new Player name: ${this._mprisPlayerNames} >*****`);
                         this._addPlayerProxy(this._activePlayerIndex);
                     }
                 }
@@ -911,7 +908,6 @@ export default class MprisPlayerControlExtension extends Extension {
                 this._lastScrollTime = now;
 
                 try {
-                    //const offsetUS = this._mprisPlayerSeekOffset * 1_000_000;
                     const offsetUS =
                         this._mprisPlayerSeekOffset *
                         this._scrollMultiplier *
