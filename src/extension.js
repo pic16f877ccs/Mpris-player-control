@@ -93,19 +93,19 @@ export default class MprisPlayerControlExtension extends Extension {
 
             this._trackLabel.clutter_text.set_width(this._titleWidth);
             if(hasTitle) {
-                this._trackLabel.remove_style_pseudo_class('insensitive');
                 this._trackLabel.set_text(this._currentTrackTitle);
+                this._trackLabel.remove_style_pseudo_class('insensitive');
             } else {
-                this._trackLabel.add_style_pseudo_class('insensitive');
                 this._trackLabel.set_text(_('Unknown title'));
+                this._trackLabel.add_style_pseudo_class('insensitive');
             }
         } else if(IndicatorFlexibility.adaptive === this._flexibility) {
             if(hasTitle) {
                 this._insertIfHasNotControlBoxChild(this._trackLabel, 1);
 
                 this._trackLabel.clutter_text.set_width(this._titleWidth);
-                this._trackLabel.remove_style_pseudo_class('insensitive');
                 this._trackLabel.set_text(this._currentTrackTitle);
+                this._trackLabel.remove_style_pseudo_class('insensitive');
             } else {
                 this._removeIndicatorBoxChildren(this._trackLabel);
             }
@@ -534,7 +534,7 @@ export default class MprisPlayerControlExtension extends Extension {
         });
         this._trackLabel.set_name('TrackLabel');
         this._trackLabel.reactive = false;
-        this._trackLabel.add_style_pseudo_class('insensitive');
+        //this._trackLabel.add_style_pseudo_class('insensitive');
         this._trackLabel.clutter_text.y_align = Clutter.ActorAlign.CENTER;
         this._trackLabel.clutter_text.ellipsize = Pango.EllipsizeMode.END;
         this._indicatorBox.add_child(this._playerIcon);
