@@ -56,14 +56,14 @@ class OsdProgressWindow extends Clutter.Actor {
 
         this._leftLabel = new St.Label();
         this._rightLabel = new St.Label();
-        this._rightLabelWidth = this._rightLabel.get_width();
+        this._rightLabelWidth = 0;
 
         this._level = new ProgressBarLevel({
             style_class: 'level',
             value: 0,
         });
-        this._level.set_width(this._osdWindowWidth);
         this._level.set_style('margin-bottom: 0px;');
+        this._level.set_width(this._osdWindowWidth);
 
         this._vbox.add_child(this._leftLabel);
         this._vbox.add_child(this._level);
@@ -91,12 +91,13 @@ class OsdProgressWindow extends Clutter.Actor {
 
     setRightLabel(label) {
         this._rightLabel.visible = label != null;
-        if (this._rightLabel.visible)
+        if (this._rightLabel.visible) {
             this._rightLabel.text = label;
 
-        if (this._rightLabelWidth !== this._rightLabel.get_width()) {
-            this._rightLabelWidth = this._rightLabel.get_width();
-            this._leftLabel.set_width(this._rightLabelWidth);
+            if (this._rightLabelWidth !== this._rightLabel.get_width()) {
+                this._rightLabelWidth = this._rightLabel.get_width();
+                this._leftLabel.set_width(this._rightLabelWidth);
+            }
         }
 
         this._updateBoxVisibility();
