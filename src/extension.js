@@ -201,6 +201,7 @@ export default class MprisPlayerControlExtension extends Extension {
         const targetVolume = Math.clamp(preferredVolume, 0, maxVolume);
 
         if (Math.abs(stream.volume - targetVolume) <= 0) {
+            this._showVolumeOsd(stream, activePlayerName, maxVolume);
             return;
         }
 
