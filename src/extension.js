@@ -113,7 +113,7 @@ export default class MprisPlayerControlExtension extends Extension {
              this._removeIndicatorBoxChildren(this._trackLabel);
         }
 
-        this._controlBox.queue_relayout();
+        this._indicatorBox.queue_relayout();
     }
 
     _connectVolumeControl() {
@@ -832,17 +832,17 @@ export default class MprisPlayerControlExtension extends Extension {
 
     _statusButtonManager(status) {
         if (status === 'Paused') {
-            this._playingPaused(TRIPLE_CONTROL_KEYS, this._playButton);
+            this._updatePlayPause(TRIPLE_CONTROL_KEYS, this._playButton);
         } else if (status === 'Playing') {
-            this._playingPaused(TRIPLE_CONTROL_KEYS, this._pauseButton);
+            this._updatePlayPause(TRIPLE_CONTROL_KEYS, this._pauseButton);
         } else if (status === 'Stopped') {
-            this._stop(TRIPLE_CONTROL_KEYS, ['Stopped', 'Playing']);
+            this._updateStop(TRIPLE_CONTROL_KEYS, ['Stopped', 'Playing']);
         } else {
-            this._stop(TRIPLE_CONTROL_KEYS, []);
+            this._updateStop(TRIPLE_CONTROL_KEYS, []);
         }
     }
 
-    _playingPaused(selectChild, icon) {
+    _updatePlayPause(selectChild, icon) {
         const statusChild = this._getStatusChild(selectChild)[0];
 
         if (statusChild !== icon) {
@@ -853,7 +853,7 @@ export default class MprisPlayerControlExtension extends Extension {
         this._enablePlaybackButtons(this._getStatusChildName());
     }
 
-    _stop(selectChild, layout) {
+    _updateStop(selectChild, layout) {
         const statusChild = this._getStatusChild(selectChild);
         this._disablePlaybackIcons(Object.keys(this._controlButtonsHandlers));
         this._currentTrackTitle = null;
@@ -1089,7 +1089,7 @@ export default class MprisPlayerControlExtension extends Extension {
         this._stopPreferredVolumeTransition();
 
         if (!mprisPlayerName) {
-            this._stop(TRIPLE_CONTROL_KEYS, []);
+            this._updateStop(TRIPLE_CONTROL_KEYS, []);
         }
             
         this._removePlayerAppIcon();
