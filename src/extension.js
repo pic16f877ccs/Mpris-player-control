@@ -418,18 +418,38 @@ export default class MprisPlayerControlExtension extends Extension {
             }
 
             this._indicator.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
-            const menuItem = new PopupMenu.PopupSwitchMenuItem(_('Auto player select'), false, { });
+            const selectMenuItem = new PopupMenu.PopupSwitchMenuItem(_('Auto player select'), false, { });
 
-            menuItem.setToggleState(this._settings.get_boolean("auto-select"));
-            this._indicator.menu.addMenuItem(menuItem);
+            selectMenuItem.setToggleState(this._settings.get_boolean("auto-select"));
+            this._indicator.menu.addMenuItem(selectMenuItem);
 
-            menuItem.connect('toggled', (item, state) => {
+            selectMenuItem.connect('toggled', (item, state) => {
                 this._settings.set_boolean('auto-select', state);
 
                 if (this._mprisPlayer) {
                     return;
                 }
                 this._addPlayerProxy(this._activePlayerIndex);
+            });
+
+            this._indicator.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
+            const shuffleMenuItem = new PopupMenu.PopupSwitchMenuItem(_('Shuffle mode'), false, { });
+            const shuffleInfoMenuItem = new PopupMenu.PopupMenuItem('', {
+                reactive: false,
+                can_focus: false,
+            });
+
+            shuffleMenuItem.setToggleState(this._settings.get_boolean("shuffle"));
+            this._indicator.menu.addMenuItem(shuffleMenuItem);
+            shuffleInfoMenuItem.setSensitive(false);
+            shuffleInfoMenuItem.add_style_class_name('dim-label');
+            shuffleInfoMenuItem.visible = false;
+            this._indicator.menu.addMenuItem(shuffleInfoMenuItem);
+
+            void this._updateShuffleAvailabilityHint(shuffleInfoMenuItem);
+
+            shuffleMenuItem.connect('toggled', (item, state) => {
+                this._settings.set_boolean('shuffle', state);
             });
 
             this._indicator.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
@@ -575,6 +595,85 @@ export default class MprisPlayerControlExtension extends Extension {
         }
     }
 
+    async _getPlayerShuffle(logFailure = true) {
+        try {
+            if (!this._dbusProxyProperties)
+                return null;
+
+            const [variant] = await this._dbusProxyProperties.GetAsync(
+                'org.mpris.MediaPlayer2.Player',
+                'Shuffle',
+            );
+
+            const value = variant?.deepUnpack?.();
+
+            return typeof value === 'boolean'
+                ? value
+                : null;
+
+        } catch (e) {
+            if (logFailure)
+                logError(e, 'property missing or player does not support shuffle');
+
+            return null;
+        }
+    }
+
+    async _setPlayerShuffle(state, logFailure = true) {
+        try {
+            if (!this._dbusProxyProperties)
+                return false;
+
+            await this._dbusProxyProperties.SetAsync(
+                'org.mpris.MediaPlayer2.Player',
+                'Shuffle',
+                new GLib.Variant('b', state),
+            );
+
+            return true;
+        } catch (e) {
+            if (logFailure)
+                logError(e, 'could not set player shuffle');
+
+            return false;
+        }
+    }
+
+    async _applyShufflePreference() {
+        const desiredState = this._settings.get_boolean('shuffle');
+        const currentState = await this._getPlayerShuffle(false);
+
+        if (currentState === null)
+            return false;
+
+        if (currentState === desiredState)
+            return true;
+
+        return this._setPlayerShuffle(desiredState, false);
+    }
+
+    async _updateShuffleAvailabilityHint(infoItem) {
+        if (!infoItem)
+            return;
+
+        if (!this._mprisPlayer || !this._dbusProxyProperties) {
+            infoItem.visible = false;
+            return;
+        }
+
+        const supportsShuffle = await this._getPlayerShuffle(false) !== null;
+
+        if (!supportsShuffle) {
+            infoItem.label.set_text(
+                _('Shuffle is unavailable for this player.')
+            );
+            infoItem.visible = true;
+            return;
+        }
+
+        infoItem.visible = false;
+    }
+
     async _getTrackPosition() {
         try {
             if (!this._dbusProxyProperties)
@@ -582,7 +681,7 @@ export default class MprisPlayerControlExtension extends Extension {
 
             const [value] = await this._dbusProxyProperties.GetAsync(
                 'org.mpris.MediaPlayer2.Player',
-                'Position'
+                'Position',
             );
 
             const position = value?.deepUnpack?.();
@@ -669,6 +768,7 @@ export default class MprisPlayerControlExtension extends Extension {
                 return;
             }
 
+            await this._applyShufflePreference();
             this._connectVolumeControl();
             this._connectSeekControlBox();
             this._updatePlayerIcon();
@@ -1251,6 +1351,9 @@ export default class MprisPlayerControlExtension extends Extension {
             },
             'changed::show-progress-indicator', (settings, key) => {
                 this._showProgressIndicator = settings.get_boolean(key);
+            },
+            'changed::shuffle', (settings, key) => {
+                void this._applyShufflePreference();
             },
             this
         );

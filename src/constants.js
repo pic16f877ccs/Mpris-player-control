@@ -26,6 +26,7 @@ export const MPRIS_PLAYER_IFACE_XML = `
         <signal name="Seeked">
             <arg type="x" direction="out" name="position"/>
         </signal>
+        <property name="Shuffle" type="b" access="readwrite"/>
     </interface>
 </node>`;
 

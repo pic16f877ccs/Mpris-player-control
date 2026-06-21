@@ -91,5 +91,12 @@
         <key name="active-player-name" type="s">
             <default>""</default>
         </key>
+        <key name="shuffle" type="b">
+            <default>false</default>
+            <summary>Sets the shuffle playback mode</summary>
+            <description>
+                Sets the playback mode to random order, if this option is available.  
+            </description>
+        </key>
     </schema>
 </schemalist>
